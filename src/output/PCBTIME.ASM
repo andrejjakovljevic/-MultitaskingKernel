@@ -1,0 +1,1071 @@
+	ifndef	??version
+?debug	macro
+	endm
+publicdll macro	name
+	public	name
+	endm
+$comm	macro	name,dist,size,count
+	comm	dist name:BYTE:count*size
+	endm
+	else
+$comm	macro	name,dist,size,count
+	comm	dist name[size]:BYTE:count
+	endm
+	endif
+	?debug	V 300h
+	?debug	S "pcbtime.cpp"
+	?debug	C E9BB7CA5500B70636274696D652E637070
+	?debug	C E9A58983500E2E2E5C685C50434274696D652E68
+	?debug	C E970B1A2500A2E2E5C685C7063622E68
+	?debug	C E97B70A2500D2E2E5C685C7468726561642E68
+	?debug	C E9E27AA5500C2E2E5C685C6C697374612E68
+	?debug	C E94029CA1817633A5C626333315C696E636C7564655C737464696F+
+	?debug	C 2E68
+	?debug	C E94029CA1817633A5C626333315C696E636C7564655C5F64656673+
+	?debug	C 2E68
+	?debug	C E94029CA1818633A5C626333315C696E636C7564655C5F6E66696C+
+	?debug	C 652E68
+	?debug	C E94029CA1817633A5C626333315C696E636C7564655C5F6E756C6C+
+	?debug	C 2E68
+	?debug	C E9C19894500C2E2E5C685C74696D65722E68
+	?debug	C E94A7DA5500D2E2E5C685C6C69737461322E68
+	?debug	C E9DB767A400F2E2E5C685C5343484544554C452E48
+	?debug	C E94029CA1817633A5C626333315C696E636C7564655C737464696F+
+	?debug	C 2E68
+PCBTIME_TEXT	segment byte public 'CODE'
+PCBTIME_TEXT	ends
+	assume	cs:PCBTIME_TEXT,ds:PCBTIME_DATA
+PCBTIME_DATA	segment word public 'FAR_DATA'
+d@	label	byte
+d@w	label	word
+b@	label	byte
+b@w	label	word
+PCBTIME_DATA	ends
+PCBTIME_TEXT	segment byte public 'CODE'
+	?debug	C E8010B70636274696D652E637070BB7CA550
+   ;	
+   ;	void PCBtime::passTime()
+   ;	
+	?debug	L 5
+	assume	cs:PCBTIME_TEXT
+@PCBtime@0passTime$qv	proc	far
+	?debug	B
+	push	bp
+	mov	bp,sp
+	sub	sp,10
+	push	ds
+	mov	ax,PCBTIME_DATA
+	mov	ds,ax
+	?debug	C F8154050434274696D6540307061737354696D65+
+	?debug	C 247176
+	?debug	C E318000400161900
+	?debug	C E604746869731802060000
+	?debug	B
+   ;	
+   ;	{
+   ;	    kolikoOtpustenih=0;
+   ;	
+	?debug	L 7
+	les	bx,dword ptr [bp+6]
+	mov	word ptr es:[bx],0
+   ;	
+   ;	    /*softlock;
+   ;	    printf("u passTime\n");
+   ;	    softunlock;*/
+   ;	    ListVal<Elem>::Node* first=lista.head;
+   ;	
+	?debug	L 11
+	les	bx,dword ptr [bp+6]
+	mov	ax,word ptr es:[bx+6]
+	mov	dx,word ptr es:[bx+4]
+	jmp	short @1@142
+@1@58:
+   ;	
+   ;	    while (first!=0)
+   ;	    {
+   ;	        /*softlock;
+   ;	        printf("time=%d\n",first->val.time);
+   ;	        softunlock;*/
+   ;	        if (first->val.time>0) first->val.time--;
+   ;	
+	?debug	L 17
+	les	bx,dword ptr [bp-4]
+	cmp	word ptr es:[bx+4],0
+	jbe	short @1@114
+	les	bx,dword ptr [bp-4]
+	dec	word ptr es:[bx+4]
+@1@114:
+   ;	
+   ;	        first=first->next;
+   ;	
+	?debug	L 18
+	les	bx,dword ptr [bp-4]
+	mov	ax,word ptr es:[bx+8]
+	mov	dx,word ptr es:[bx+6]
+@1@142:
+	mov	word ptr [bp-2],ax
+	mov	word ptr [bp-4],dx
+	?debug	L 12
+	mov	ax,word ptr [bp-4]
+	or	ax,word ptr [bp-2]
+	jne	short @1@58
+   ;	
+   ;	    }
+   ;	    first=lista.head;
+   ;	
+	?debug	L 20
+	les	bx,dword ptr [bp+6]
+	mov	ax,word ptr es:[bx+6]
+	mov	dx,word ptr es:[bx+4]
+	mov	word ptr [bp-2],ax
+	mov	word ptr [bp-4],dx
+	jmp	short @1@282
+@1@226:
+   ;	
+   ;	    while (lista.length!=0 && lista.head->val.time==0)
+   ;	    {
+   ;	        kolikoOtpustenih++;
+   ;	
+	?debug	L 23
+	les	bx,dword ptr [bp+6]
+	inc	word ptr es:[bx]
+	?debug	B
+   ;	
+   ;	        Elem pom=lista.pop();
+   ;	
+	?debug	L 24
+	mov	ax,word ptr [bp+6]
+	add	ax,2
+	push	word ptr [bp+8]
+	push	ax
+	push	ss
+	lea	ax,word ptr [bp-10]
+	push	ax
+	call	far ptr @@%ListVal$t12PCBtime@Elem%@pop$wqv
+	add	sp,8
+   ;	
+   ;	        pom.pcb->timeUnblock=1;
+   ;	
+	?debug	L 25
+	les	bx,dword ptr [bp-10]
+	mov	word ptr es:[bx+16],1
+   ;	
+   ;	        pom.pcb->state=READY;
+   ;	
+	?debug	L 26
+	les	bx,dword ptr [bp-10]
+	mov	word ptr es:[bx+18],1
+   ;	
+   ;	        Scheduler::put(pom.pcb);
+   ;	
+	?debug	L 27
+	push	word ptr [bp-8]
+	push	word ptr [bp-10]
+	call	far ptr @Scheduler@0put$qn3PCB
+	pop	cx
+	pop	cx
+@1@282:
+	?debug	C E603706F6D1A02F6FF00
+	?debug	E
+	?debug	L 21
+	les	bx,dword ptr [bp+6]
+	cmp	word ptr es:[bx+2],0
+	je	short @1@338
+	les	bx,dword ptr [bp+6]
+	les	bx,dword ptr es:[bx+4]
+	cmp	word ptr es:[bx+4],0
+	je	short @1@226
+@1@338:
+   ;	
+   ;	    }
+   ;	}
+   ;	
+	?debug	L 29
+	pop	ds
+	mov	sp,bp
+	pop	bp
+	ret	
+	?debug	C E31B000400161C00
+	?debug	C E60566697273741B02FCFF000474686973180206+
+	?debug	C 0000
+	?debug	E
+	?debug	E
+@PCBtime@0passTime$qv	endp
+   ;	
+   ;	void PCBtime::addPCB(PCB* pcb, Time maxTime)
+   ;	
+	?debug	L 31
+	assume	cs:PCBTIME_TEXT
+@PCBtime@0addPCB$qn3PCBui	proc	far
+	?debug	B
+	push	bp
+	mov	bp,sp
+	sub	sp,18
+	push	si
+	push	ds
+	mov	ax,PCBTIME_DATA
+	mov	ds,ax
+	?debug	C F8194050434274696D6540306164645043422471+
+	?debug	C 6E335043427569
+	?debug	C E31D000400161E00
+	?debug	C E6076D617854696D650A0A0E0000037063621D0A+
+	?debug	C 0A000004746869731802060000
+	mov	si,word ptr [bp+14]
+	?debug	B
+   ;	
+   ;	{
+   ;	    /*softlock;
+   ;	    printf("id=%d\n",pcb->myThread->getId());
+   ;	    softunlock;*/
+   ;	    Elem el(pcb,maxTime);
+   ;	
+	?debug	L 36
+	push	si
+	push	word ptr [bp+12]
+	push	word ptr [bp+10]
+	push	ss
+	lea	ax,word ptr [bp-6]
+	push	ax
+	call	far ptr @@PCBtime@Elem@0$bctr$qn3PCBui
+	add	sp,10
+   ;	
+   ;	    ListVal<Elem>::Node* pom = new ListVal<Elem>::Node(el);
+   ;	
+	?debug	L 37
+	sub	sp,6
+	mov	ax,word ptr [bp-4]
+	mov	dx,word ptr [bp-6]
+	mov	word ptr [bp-26],ax
+	mov	word ptr [bp-28],dx
+	mov	ax,word ptr [bp-2]
+	mov	word ptr [bp-24],ax
+	xor	ax,ax
+	xor	dx,dx
+	push	ax
+	push	dx
+	call	far ptr @@%ListVal$t12PCBtime@Elem%@Node@0$bctr$q12PCBtime@Elem
+	add	sp,10
+	mov	word ptr [bp-8],dx
+	mov	word ptr [bp-10],ax
+   ;	
+   ;	    ListVal<Elem>::Node* first=lista.head;
+   ;	
+	?debug	L 38
+	les	bx,dword ptr [bp+6]
+	mov	ax,word ptr es:[bx+6]
+	mov	dx,word ptr es:[bx+4]
+	mov	word ptr [bp-12],ax
+	mov	word ptr [bp-14],dx
+   ;	
+   ;	    ListVal<Elem>::Node* prev=0;
+   ;	
+	?debug	L 39
+	mov	word ptr [bp-16],0
+	mov	word ptr [bp-18],0
+   ;	
+   ;	    if (maxTime!=-1)
+   ;	
+	?debug	L 40
+	cmp	si,-1
+	je	short @2@198
+	jmp	short @2@114
+@2@86:
+   ;	
+   ;	    {
+   ;	        while (first!=0 && first->val.time<maxTime)
+   ;	        {
+   ;	            prev=first;
+   ;	
+	?debug	L 44
+	mov	ax,word ptr [bp-12]
+	mov	dx,word ptr [bp-14]
+	mov	word ptr [bp-16],ax
+	mov	word ptr [bp-18],dx
+   ;	
+   ;	            first=first->next;
+   ;	
+	?debug	L 45
+	les	bx,dword ptr [bp-14]
+	mov	ax,word ptr es:[bx+8]
+	mov	dx,word ptr es:[bx+6]
+	mov	word ptr [bp-12],ax
+	mov	word ptr [bp-14],dx
+@2@114:
+	?debug	L 42
+	mov	ax,word ptr [bp-14]
+	or	ax,word ptr [bp-12]
+	je	short @2@170
+	les	bx,dword ptr [bp-14]
+	cmp	word ptr es:[bx+4],si
+	jb	short @2@86
+@2@170:
+   ;	
+   ;	        }
+   ;	    }
+   ;	
+	?debug	L 47
+	jmp	short @2@282
+@2@198:
+	jmp	short @2@254
+@2@226:
+   ;	
+   ;	    else
+   ;	    {
+   ;	        while (first!=0)
+   ;	        {
+   ;	            prev=first;
+   ;	
+	?debug	L 52
+	mov	ax,word ptr [bp-12]
+	mov	dx,word ptr [bp-14]
+	mov	word ptr [bp-16],ax
+	mov	word ptr [bp-18],dx
+   ;	
+   ;	            first=first->next;
+   ;	
+	?debug	L 53
+	les	bx,dword ptr [bp-14]
+	mov	ax,word ptr es:[bx+8]
+	mov	dx,word ptr es:[bx+6]
+	mov	word ptr [bp-12],ax
+	mov	word ptr [bp-14],dx
+@2@254:
+	?debug	L 50
+	mov	ax,word ptr [bp-14]
+	or	ax,word ptr [bp-12]
+	jne	short @2@226
+@2@282:
+   ;	
+   ;	        }
+   ;	    }
+   ;	    lista.length++;
+   ;	
+	?debug	L 56
+	les	bx,dword ptr [bp+6]
+	inc	word ptr es:[bx+2]
+   ;	
+   ;	    pom->next=first;
+   ;	
+	?debug	L 57
+	les	bx,dword ptr [bp-10]
+	mov	ax,word ptr [bp-12]
+	mov	dx,word ptr [bp-14]
+	mov	word ptr es:[bx+8],ax
+	mov	word ptr es:[bx+6],dx
+   ;	
+   ;	    if (prev!=0) prev->next=pom;
+   ;	
+	?debug	L 58
+	mov	ax,word ptr [bp-18]
+	or	ax,word ptr [bp-16]
+	je	short @2@338
+	les	bx,dword ptr [bp-18]
+	mov	ax,word ptr [bp-8]
+	mov	dx,word ptr [bp-10]
+	mov	word ptr es:[bx+8],ax
+	mov	word ptr es:[bx+6],dx
+@2@338:
+   ;	
+   ;	    if (prev==0)
+   ;	
+	?debug	L 59
+	mov	ax,word ptr [bp-18]
+	or	ax,word ptr [bp-16]
+	jne	short @2@394
+   ;	
+   ;	    {
+   ;	        lista.head=pom;
+   ;	
+	?debug	L 61
+	les	bx,dword ptr [bp+6]
+	mov	ax,word ptr [bp-8]
+	mov	dx,word ptr [bp-10]
+	mov	word ptr es:[bx+6],ax
+	mov	word ptr es:[bx+4],dx
+@2@394:
+   ;	
+   ;	    }
+   ;	}
+   ;	
+	?debug	L 63
+	pop	ds
+	pop	si
+	mov	sp,bp
+	pop	bp
+	ret	
+	?debug	C E604707265761B02EEFF000566697273741B02F2+
+	?debug	C FF0003706F6D1B02F6FF0002656C1A02FAFF0004+
+	?debug	C 746869731802060000037063621D0A0A0000076D+
+	?debug	C 617854696D650A0C0600
+	?debug	E
+	?debug	E
+@PCBtime@0addPCB$qn3PCBui	endp
+   ;	
+   ;	void PCBtime::signalOne()
+   ;	
+	?debug	L 65
+	assume	cs:PCBTIME_TEXT
+@PCBtime@0signalOne$qv	proc	far
+	?debug	B
+	push	bp
+	mov	bp,sp
+	sub	sp,10
+	push	ds
+	mov	ax,PCBTIME_DATA
+	mov	ds,ax
+	?debug	C F8164050434274696D6540307369676E616C4F6E+
+	?debug	C 65247176
+	?debug	C E604746869731802060000
+	?debug	B
+   ;	
+   ;	{
+   ;	    if (lista.length!=0)
+   ;	
+	?debug	L 67
+	les	bx,dword ptr [bp+6]
+	cmp	word ptr es:[bx+2],0
+	je	short @3@86
+	?debug	B
+   ;	
+   ;	    {
+   ;	        PCB* nes=lista.pop().pcb;
+   ;	
+	?debug	L 69
+	mov	ax,word ptr [bp+6]
+	add	ax,2
+	push	word ptr [bp+8]
+	push	ax
+	push	ss
+	lea	ax,word ptr [bp-10]
+	push	ax
+	call	far ptr @@%ListVal$t12PCBtime@Elem%@pop$wqv
+	add	sp,8
+	mov	ax,word ptr [bp-8]
+	mov	dx,word ptr [bp-10]
+	mov	word ptr [bp-2],ax
+	mov	word ptr [bp-4],dx
+   ;	
+   ;	        nes->state=READY;
+   ;	
+	?debug	L 70
+	les	bx,dword ptr [bp-4]
+	mov	word ptr es:[bx+18],1
+   ;	
+   ;	        Scheduler::put(nes);
+   ;	
+	?debug	L 71
+	push	word ptr [bp-2]
+	push	word ptr [bp-4]
+	call	far ptr @Scheduler@0put$qn3PCB
+	pop	cx
+	pop	cx
+@3@86:
+	?debug	C E6036E65731D02FCFF00
+	?debug	E
+   ;	
+   ;	    }
+   ;	}
+   ;	
+	?debug	L 73
+	pop	ds
+	mov	sp,bp
+	pop	bp
+	ret	
+	?debug	C E604746869731802060000
+	?debug	E
+	?debug	E
+@PCBtime@0signalOne$qv	endp
+PCBTIME_TEXT	ends
+PCBTIME_TEXT	segment byte public 'CODE'
+@%ListVal$t12PCBtime@Elem%@pop$wqv	segment	virtual
+	?debug	C E8020D2E2E5C685C6C69737461322E684A7DA550
+	?debug	L 45
+	assume	cs:@%ListVal$t12PCBtime@Elem%@pop$wqv
+@@%ListVal$t12PCBtime@Elem%@pop$wqv	proc	far
+	?debug	B
+	push	bp
+	mov	bp,sp
+	sub	sp,14
+	push	ds
+	mov	ax,PCBTIME_DATA
+	mov	ds,ax
+	?debug	C F82240254C69737456616C247431325043427469+
+	?debug	C 6D6540456C656D2540706F7024777176
+	?debug	C E31F000400162000
+	?debug	C E604746869731F020A0000
+	?debug	B
+	?debug	L 47
+	les	bx,dword ptr [bp+10]
+	mov	ax,word ptr es:[bx+4]
+	mov	dx,word ptr es:[bx+2]
+	mov	word ptr [bp-8],ax
+	mov	word ptr [bp-10],dx
+	les	bx,dword ptr [bp-10]
+	mov	ax,word ptr es:[bx+2]
+	mov	dx,word ptr es:[bx]
+	mov	word ptr [bp-4],ax
+	mov	word ptr [bp-6],dx
+	les	bx,dword ptr [bp-10]
+	mov	ax,word ptr es:[bx+4]
+	mov	word ptr [bp-2],ax
+	?debug	L 48
+	les	bx,dword ptr [bp+10]
+	mov	ax,word ptr es:[bx+4]
+	mov	dx,word ptr es:[bx+2]
+	mov	word ptr [bp-12],ax
+	mov	word ptr [bp-14],dx
+	?debug	L 49
+	les	bx,dword ptr [bp+10]
+	les	bx,dword ptr es:[bx+2]
+	mov	ax,word ptr es:[bx+8]
+	mov	dx,word ptr es:[bx+6]
+	les	bx,dword ptr [bp+10]
+	mov	word ptr es:[bx+4],ax
+	mov	word ptr es:[bx+2],dx
+	?debug	L 50
+	les	bx,dword ptr [bp+10]
+	dec	word ptr es:[bx]
+	?debug	L 51
+	mov	ax,seg @Timer@0globalLockCnt
+	mov	es,ax
+	inc	word ptr es:@Timer@0globalLockCnt
+	?debug	L 52
+	push	word ptr [bp-12]
+	push	word ptr [bp-14]
+	call	far ptr @$bdele$qnv
+	pop	cx
+	pop	cx
+	?debug	L 53
+	mov	ax,seg @Timer@0globalLockCnt
+	mov	es,ax
+	dec	word ptr es:@Timer@0globalLockCnt
+	jne	short @4@86
+	mov	ax,seg @Timer@0zahtevana_promena_konteksta
+	mov	es,ax
+	cmp	word ptr es:@Timer@0zahtevana_promena_konteksta,0
+	je	short @4@86
+@4@86:
+	?debug	L 54
+	les	bx,dword ptr [bp+6]
+	mov	ax,word ptr [bp-4]
+	mov	dx,word ptr [bp-6]
+	mov	word ptr es:[bx+2],ax
+	mov	word ptr es:[bx],dx
+	les	bx,dword ptr [bp+6]
+	mov	ax,word ptr [bp-2]
+	mov	word ptr es:[bx+4],ax
+	mov	dx,word ptr [bp+8]
+	mov	ax,word ptr [bp+6]
+	jmp	short @4@114
+@4@114:
+	?debug	L 55
+	pop	ds
+	mov	sp,bp
+	pop	bp
+	ret	
+	?debug	C E321000400351A00
+	?debug	C E322000400161A00
+	?debug	C E6036F6C641B02F2FF00037265741A02FAFF0006+
+	?debug	C 72657475726E220A06000004746869731F020A00+
+	?debug	C 00
+	?debug	E
+	?debug	E
+@@%ListVal$t12PCBtime@Elem%@pop$wqv	endp
+@%ListVal$t12PCBtime@Elem%@pop$wqv	ends
+PCBTIME_TEXT	ends
+PCBTIME_TEXT	segment byte public 'CODE'
+@PCBtime@Elem@0$bctr$qn3PCBui	segment	virtual
+	?debug	C E8030E2E2E5C685C50434274696D652E68A58983+
+	?debug	C 50
+	?debug	L 13
+	assume	cs:@PCBtime@Elem@0$bctr$qn3PCBui
+@@PCBtime@Elem@0$bctr$qn3PCBui	proc	far
+	?debug	B
+	push	bp
+	mov	bp,sp
+	push	ds
+	mov	ax,PCBTIME_DATA
+	mov	ds,ax
+	?debug	C F81D4050434274696D6540456C656D4030246263+
+	?debug	C 747224716E335043427569
+	?debug	C E6055F74696D650A0A0E0000045F7063621D0A0A+
+	?debug	C 000004746869732202060000
+	?debug	B
+	mov	ax,word ptr [bp+6]
+	or	ax,word ptr [bp+8]
+	jne	short @5@86
+	mov	ax,6
+	push	ax
+	call	far ptr @$bnew$qui
+	pop	cx
+	mov	word ptr [bp+8],dx
+	mov	word ptr [bp+6],ax
+	or	ax,dx
+	je	short @5@114
+@5@86:
+	les	bx,dword ptr [bp+6]
+	mov	ax,word ptr [bp+12]
+	mov	dx,word ptr [bp+10]
+	mov	word ptr es:[bx+2],ax
+	mov	word ptr es:[bx],dx
+	les	bx,dword ptr [bp+6]
+	mov	ax,word ptr [bp+14]
+	mov	word ptr es:[bx+4],ax
+@5@114:
+	mov	dx,word ptr [bp+8]
+	mov	ax,word ptr [bp+6]
+	jmp	short @5@142
+@5@142:
+	pop	ds
+	pop	bp
+	ret	
+	?debug	C E604746869732202060000045F7063621D0A0A00+
+	?debug	C 00055F74696D650A0A0E0000
+	?debug	E
+	?debug	E
+@@PCBtime@Elem@0$bctr$qn3PCBui	endp
+@PCBtime@Elem@0$bctr$qn3PCBui	ends
+PCBTIME_TEXT	ends
+PCBTIME_TEXT	segment byte public 'CODE'
+@%ListVal$t12PCBtime@Elem%@Node@0$bctr$q12PCBtime@Elem	segment	virtual
+	?debug	C E802
+	?debug	L 16
+	assume	cs:@%ListVal$t12PCBtime@Elem%@Node@0$bctr$q12PCBtime@Elem
+@@%ListVal$t12PCBtime@Elem%@Node@0$bctr$q12PCBtime@Elem	proc	far
+	?debug	B
+	push	bp
+	mov	bp,sp
+	push	ds
+	mov	ax,PCBTIME_DATA
+	mov	ds,ax
+	?debug	C F83640254C69737456616C247431325043427469+
+	?debug	C 6D6540456C656D25404E6F646540302462637472+
+	?debug	C 2471313250434274696D6540456C656D
+	?debug	C E604646174611A0A0A000004746869731B020600+
+	?debug	C 00
+	?debug	B
+	mov	ax,word ptr [bp+6]
+	or	ax,word ptr [bp+8]
+	jne	short @6@86
+	mov	ax,10
+	push	ax
+	call	far ptr @$bnew$qui
+	pop	cx
+	mov	word ptr [bp+8],dx
+	mov	word ptr [bp+6],ax
+	or	ax,dx
+	je	short @6@114
+@6@86:
+	les	bx,dword ptr [bp+6]
+	mov	ax,word ptr [bp+12]
+	mov	dx,word ptr [bp+10]
+	mov	word ptr es:[bx+2],ax
+	mov	word ptr es:[bx],dx
+	les	bx,dword ptr [bp+6]
+	mov	ax,word ptr [bp+14]
+	mov	word ptr es:[bx+4],ax
+	les	bx,dword ptr [bp+6]
+	mov	word ptr es:[bx+8],0
+	mov	word ptr es:[bx+6],0
+@6@114:
+	mov	dx,word ptr [bp+8]
+	mov	ax,word ptr [bp+6]
+	jmp	short @6@142
+@6@142:
+	pop	ds
+	pop	bp
+	ret	
+	?debug	C E604746869731B0206000004646174611A0A0A00+
+	?debug	C 00
+	?debug	E
+	?debug	E
+@@%ListVal$t12PCBtime@Elem%@Node@0$bctr$q12PCBtime@Elem	endp
+	?debug	C E9
+	?debug	C FA00000000
+@%ListVal$t12PCBtime@Elem%@Node@0$bctr$q12PCBtime@Elem	ends
+PCBTIME_TEXT	ends
+PCBTIME_DATA	segment word public 'FAR_DATA'
+s@	label	byte
+PCBTIME_DATA	ends
+PCBTIME_TEXT	segment byte public 'CODE'
+PCBTIME_TEXT	ends
+	?debug	C E3201A40254C69737456616C2474313250434274+
+	?debug	C 696D6540456C656D2506002E05
+	?debug	C ED00050000010E00
+	?debug	C E31A0E4050434274696D654030456C656D06002E+
+	?debug	C 02
+	?debug	C ED000200000D0F00
+	?debug	C E3230000002D2204031A001D4050434274696D65+
+	?debug	C 40456C656D4030246263747224716E3350434275+
+	?debug	C 69
+	?debug	C E31C1F40254C69737456616C2474313250434274+
+	?debug	C 696D6540456C656D25404E6F64650A002E03
+	?debug	C ED00030000110F00
+	?debug	C E3250000002D1B04031C003640254C6973745661+
+	?debug	C 6C2474313250434274696D6540456C656D25404E+
+	?debug	C 6F6465403024626374722471313250434274696D+
+	?debug	C 6540456C656D
+	?debug	C E3270000002D0104092000
+	?debug	C E3290000002D0104092000
+	?debug	C E32B0000002D1A040320002240254C6973745661+
+	?debug	C 6C2474313250434274696D6540456C656D254070+
+	?debug	C 6F7024777176
+	?debug	C E32D0000002D0104092000
+	?debug	C E32F0000002D0104092000
+	?debug	C E331000400162000
+	?debug	C E3320000002D3104092000
+	?debug	C E3340000002D1A04092000
+	?debug	C E3190750434274696D6508002E01
+	?debug	C ED00010000150E00
+	?debug	C E3360000002D0104011900154050434274696D65+
+	?debug	C 40307061737354696D65247176
+	?debug	C E3380000002D0104011900194050434274696D65+
+	?debug	C 403061646450434224716E335043427569
+	?debug	C E33A0000002D0104011900164050434274696D65+
+	?debug	C 40307369676E616C4F6E65247176
+	?debug	C E31E03504342A8002E04
+	?debug	C ED000400001C0E00
+	?debug	C E33C000400161E00
+	?debug	C E33D000400160A00
+	?debug	C E33E06537461746573020022000080FF7F45
+	?debug	C E3410654687265616408002E06
+	?debug	C ED00060000490E00
+	?debug	C E3420000002D0104014100114054687265616440+
+	?debug	C 307374617274247176
+	?debug	C E3440000002D01040141001A4054687265616440+
+	?debug	C 3077616974546F436F6D706C657465247176
+	?debug	C E3460000002D0104014100114054687265616440+
+	?debug	C 302462647472247176
+	?debug	C E3480000002D0404014100114054687265616440+
+	?debug	C 306765744964247176
+	?debug	C E34A0000002D0404014100184054687265616440+
+	?debug	C 3067657452756E6E696E674964247176
+	?debug	C E34C0000002D4004014100194054687265616440+
+	?debug	C 3067657454687265616442794964247169
+	?debug	C E34E0000002D0104014100134054687265616440+
+	?debug	C 307369676E616C24717569
+	?debug	C E3500000002D0104014100214054687265616440+
+	?debug	C 30726567697374657248616E646C657224717569+
+	?debug	C 6E71762476
+	?debug	C E3520000002D0104014100224054687265616440+
+	?debug	C 30756E7265676973746572416C6C48616E646C65+
+	?debug	C 727324717569
+	?debug	C E3540000002D0104014100184054687265616440+
+	?debug	C 3073776170247175696E717624767432
+	?debug	C E3560000002D0104014100184054687265616440+
+	?debug	C 30626C6F636B5369676E616C24717569
+	?debug	C E3580000002D0104014100204054687265616440+
+	?debug	C 30626C6F636B5369676E616C476C6F62616C6C79+
+	?debug	C 24717569
+	?debug	C E35A0000002D01040141001A4054687265616440+
+	?debug	C 30756E626C6F636B5369676E616C24717569
+	?debug	C E35C0000002D0104014100224054687265616440+
+	?debug	C 30756E626C6F636B5369676E616C476C6F62616C+
+	?debug	C 6C7924717569
+	?debug	C E35E0000002D4004014100144054687265616440+
+	?debug	C 3024626374722471756C7569
+	?debug	C E3600000002D0104094102
+	?debug	C E340000400164100
+	?debug	C E3630E40254C69737424746E717624762506002E+
+	?debug	C 07
+	?debug	C ED000700005C0E00
+	?debug	C E36500000023010400
+	?debug	C E364000400166500
+	?debug	C E3661340254C69737424746E7176247625404E6F+
+	?debug	C 646508002E08
+	?debug	C ED000800006A0F00
+	?debug	C E367000400166600
+	?debug	C E3680000002D6704096600
+	?debug	C E36A0000002D0104096300
+	?debug	C E36C0000002D0104096300
+	?debug	C E36E0000002D0104096300
+	?debug	C E3700000002D6404096300
+	?debug	C E3720000002D0104096300
+	?debug	C E3740000002D0104096300
+	?debug	C E3760000002D0104096300
+	?debug	C E3780000002D6704096300
+	?debug	C E37A000400166300
+	?debug	C E37B0000002D7A04096300
+	?debug	C E3620060001A63
+	?debug	C E37D0B40254C697374247475692506002E09
+	?debug	C ED000900006E0E00
+	?debug	C E37E1040254C6973742474756925404E6F646506+
+	?debug	C 002E0A
+	?debug	C ED000A00007C0F00
+	?debug	C E37F000400167E00
+	?debug	C E380800000002D7F04097E00
+	?debug	C E380820000002D0104097D00
+	?debug	C E380840000002D0104097D00
+	?debug	C E380860000002D0104097D00
+	?debug	C E380880000002D0A04097D00
+	?debug	C E3808A0000002D0104097D00
+	?debug	C E3808C0000002D0104097D00
+	?debug	C E3808E0000002D0104097D00
+	?debug	C E380900000002D7F04097D00
+	?debug	C E38092000400167D00
+	?debug	C E380930000002D809204097D00
+	?debug	C E380950020001A04
+	?debug	C E380960020001A04
+	?debug	C E380970E40254C69737424746E33504342250600+
+	?debug	C 2E0B
+	?debug	C ED000B000080800E00
+	?debug	C E380981340254C69737424746E3350434225404E+
+	?debug	C 6F646508002E0C
+	?debug	C ED000C0000808E0F00
+	?debug	C E3809900040016809800
+	?debug	C E3809A0000002D80990409809800
+	?debug	C E3809C0000002D010409809700
+	?debug	C E3809E0000002D010409809700
+	?debug	C E380A00000002D010409809700
+	?debug	C E380A20000002D1D0409809700
+	?debug	C E380A40000002D010409809700
+	?debug	C E380A60000002D010409809700
+	?debug	C E380A80000002D010409809700
+	?debug	C E380AA0000002D80990409809700
+	?debug	C E380AC00040016809700
+	?debug	C E380AD0000002D80AC0409809700
+	?debug	C E380AF0000002D1D04011E001140504342403024+
+	?debug	C 626374722471756C7569
+	?debug	C E380B10000002D1D04011E001940504342403024+
+	?debug	C 6263747224716E36546872656164756C7569
+	?debug	C E380B30000002D0104011E001740504342403077+
+	?debug	C 72617070657224716E36546872656164
+	?debug	C E380B50000002D0104011E001840504342403061+
+	?debug	C 6464546F416C6C50434224716E33504342
+	?debug	C E380B70000002D0104011E001D40504342403064+
+	?debug	C 656C65746546726F6D416C6C50434224716E3350+
+	?debug	C 4342
+	?debug	C E380B90000002D0104011E001D40504342403061+
+	?debug	C 6464546F426C6F636B65644C69737424716E3350+
+	?debug	C 4342
+	?debug	C E380BB0000002D0104011E001440504342403075+
+	?debug	C 6E626C6F636B416C6C24777176
+	?debug	C E380BD0000002D0104011E000E40504342403024+
+	?debug	C 62647472247176
+	?debug	C E380BF0000002D0104011E001140504342403073+
+	?debug	C 69676E616C2477717569
+	?debug	C E380C10000002D0104011E001E40504342403072+
+	?debug	C 6567697374657248616E646C6572247175696E71+
+	?debug	C 762476
+	?debug	C E380C30000002D0104011E001F40504342403075+
+	?debug	C 6E7265676973746572416C6C48616E646C657273+
+	?debug	C 24717569
+	?debug	C E380C50000002D0104011E001540504342403073+
+	?debug	C 776170247175696E717624767432
+	?debug	C E380C70000002D0104011E001540504342403062+
+	?debug	C 6C6F636B5369676E616C24717569
+	?debug	C E380C90000002D0104011E001D40504342403062+
+	?debug	C 6C6F636B5369676E616C476C6F62616C6C792471+
+	?debug	C 7569
+	?debug	C E380CB0000002D0104011E001740504342403075+
+	?debug	C 6E626C6F636B5369676E616C24717569
+	?debug	C E380CD0000002D0104011E001F40504342403075+
+	?debug	C 6E626C6F636B5369676E616C476C6F62616C6C79+
+	?debug	C 24717569
+	?debug	C E380CF0000002D0104011E001340504342403064+
+	?debug	C 6F5369676E616C7324777176
+	extrn	@Scheduler@0put$qn3PCB:far
+	public	@PCBtime@0signalOne$qv
+	public	@PCBtime@0addPCB$qn3PCBui
+	public	@PCBtime@0passTime$qv
+	extrn	@PCB@0pomlist:word
+	extrn	@PCB@0allPCB:word
+	extrn	@Timer@0globalLockCnt:word
+	extrn	@Timer@0zahtevana_promena_konteksta:word
+	extrn	@$bdele$qnv:far
+	extrn	@$bnew$qui:far
+_s@	equ	s@
+	?debug	C EA050D
+	?debug	C E380D1095363686564756C657201002E0D
+	?debug	C ED000D000080920E00
+	?debug	C E380D20000002D01040180D10016405363686564+
+	?debug	C 756C6572403070757424716E33504342
+	?debug	C E380D40000002D1D040180D10012405363686564+
+	?debug	C 756C65724030676574247176
+	?debug	C E380D60554696D657201002E0E
+	?debug	C ED000E000080950E00
+	?debug	C E380D70000002D01040180D6000F4054696D6572+
+	?debug	C 4030696E6974247176
+	?debug	C E380D90000002D01040180D600124054696D6572+
+	?debug	C 4030726573746F7265247176
+	?debug	C E380DB00000023010400
+	?debug	C EB0B40246264656C6524716E7680DB00
+	?debug	C E380DD000400160100
+	?debug	C E380DC0000002380DD0400
+	?debug	C EB0A4024626E65772471756980DC00
+	?debug	C E60666706F735F740606000673697A655F740A06+
+	?debug	C 00085369676E616C49640A06000D5369676E616C+
+	?debug	C 48616E646C65726406000249440406000454696D+
+	?debug	C 650A060009537461636B53697A650C0600095363+
+	?debug	C 686564756C657280D107000A3C74656D706C6174+
+	?debug	C 653E2007000750434274696D651907000A3C7465+
+	?debug	C 6D706C6174653E809707000A3C74656D706C6174+
+	?debug	C 653E7D07000A3C74656D706C6174653E63070006+
+	?debug	C 5374617465733E07000554696D657280D6070006+
+	?debug	C 546872656164410700035043421E0700
+	?debug	C E27001541A70044E6F64651C00066C656E677468+
+	?debug	C 040004686561641B482440254C69737456616C24+
+	?debug	C 74313250434274696D6540456C656D2540657261+
+	?debug	C 73652477717627483040254C69737456616C2474+
+	?debug	C 313250434274696D6540456C656D254070757368+
+	?debug	C 247771313250434274696D6540456C656D294822+
+	?debug	C 40254C69737456616C2474313250434274696D65+
+	?debug	C 40456C656D2540706F70247771762B492340254C+
+	?debug	C 69737456616C2474313250434274696D6540456C+
+	?debug	C 656D254024626474722471762D483F40254C6973+
+	?debug	C 7456616C2474313250434274696D6540456C656D+
+	?debug	C 254064656C4E6F646524716E3330254C69737456+
+	?debug	C 616C2474313250434274696D6540456C6F722F4A+
+	?debug	C 2340254C69737456616C2474313250434274696D+
+	?debug	C 6540456C656D2540246263747224717632482540+
+	?debug	C 254C69737456616C2474313250434274696D6540+
+	?debug	C 456C656D25406865616456616C24717634C00600+
+	?debug	C 0000
+	?debug	C E200037063621D000474696D650A4A1D40504342+
+	?debug	C 74696D6540456C656D4030246263747224716E33+
+	?debug	C 504342756923C006000000
+	?debug	C E2000376616C1A00046E6578741B4A3640254C69+
+	?debug	C 737456616C2474313250434274696D6540456C65+
+	?debug	C 6D25404E6F646540302462637472247131325043+
+	?debug	C 4274696D6540456C656D25C00A000000
+	?debug	C E27004456C656D1A00106B6F6C696B6F4F747075+
+	?debug	C 7374656E69680400056C69737461204815405043+
+	?debug	C 4274696D6540307061737354696D652471763648+
+	?debug	C 194050434274696D65403061646450434224716E+
+	?debug	C 3350434275693848164050434274696D65403073+
+	?debug	C 69676E616C4F6E652471763AC008000000
+	?debug	C E2600D40504342403072756E6E696E673C000573+
+	?debug	C 7461636B3D000273730A000273700A000262700A+
+	?debug	C 00056B76616E740A00096C6F636B436F756E7404+
+	?debug	C 0002696404000B74696D65556E626C6F636B0400+
+	?debug	C 0573746174653E00086D7954687265616440600B+
+	?debug	C 4050434240304D4158494404000E7369676E616C+
+	?debug	C 48616E646C65727362000D616374697665536967+
+	?debug	C 6E616C737D000A7369676E616C4C6F636B809560+
+	?debug	C 16405043424030676C6F62616C5369676E616C4C+
+	?debug	C 6F636B80960006706172656E741D600C40504342+
+	?debug	C 4030616C6C50434280970007626C6F636B656480+
+	?debug	C 97600D405043424030696E697469616C3C600E40+
+	?debug	C 504342403064756D6D795043423C601440504342+
+	?debug	C 403072756E6E696E675468726561647304600D40+
+	?debug	C 5043424030706F6D6C6973747D4A114050434240+
+	?debug	C 3024626374722471756C756980AF4A1940504342+
+	?debug	C 4030246263747224716E36546872656164756C75+
+	?debug	C 6980B14817405043424030777261707065722471+
+	?debug	C 6E3654687265616480B348184050434240306164+
+	?debug	C 64546F416C6C50434224716E3350434280B5481D+
+	?debug	C 40504342403064656C65746546726F6D416C6C50+
+	?debug	C 434224716E3350434280B7481D40504342403061+
+	?debug	C 6464546F426C6F636B65644C69737424716E3350+
+	?debug	C 434280B94814405043424030756E626C6F636B41+
+	?debug	C 6C6C2477717680BB490E40504342403024626474+
+	?debug	C 7224717680BD48114050434240307369676E616C+
+	?debug	C 247771756980BF481E4050434240307265676973+
+	?debug	C 74657248616E646C6572247175696E7176247680+
+	?debug	C C1481F405043424030756E726567697374657241+
+	?debug	C 6C6C48616E646C6572732471756980C348154050+
+	?debug	C 4342403073776170247175696E71762476743280+
+	?debug	C C54815405043424030626C6F636B5369676E616C+
+	?debug	C 2471756980C7481D405043424030626C6F636B53+
+	?debug	C 69676E616C476C6F62616C6C792471756980C948+
+	?debug	C 17405043424030756E626C6F636B5369676E616C+
+	?debug	C 2471756980CB481F405043424030756E626C6F63+
+	?debug	C 6B5369676E616C476C6F62616C6C792471756980+
+	?debug	C CD4813405043424030646F5369676E616C732477+
+	?debug	C 717680CFC0A8000000
+	?debug	C E40004444F4E4500000005524541445901000004+
+	?debug	C 4D41444502008007424C4F434B45440300
+	?debug	C E248114054687265616440307374617274247176+
+	?debug	C 42481A40546872656164403077616974546F436F+
+	?debug	C 6D706C657465247176444D114054687265616440+
+	?debug	C 3024626474722471764648114054687265616440+
+	?debug	C 3067657449642471764848184054687265616440+
+	?debug	C 3067657452756E6E696E6749642471764A481940+
+	?debug	C 5468726561644030676574546872656164427949+
+	?debug	C 642471694C48134054687265616440307369676E+
+	?debug	C 616C247175694E48214054687265616440307265+
+	?debug	C 67697374657248616E646C6572247175696E7176+
+	?debug	C 2476504822405468726561644030756E72656769+
+	?debug	C 73746572416C6C48616E646C6572732471756952+
+	?debug	C 481840546872656164403073776170247175696E+
+	?debug	C 717624767432544818405468726561644030626C+
+	?debug	C 6F636B5369676E616C2471756956482040546872+
+	?debug	C 6561644030626C6F636B5369676E616C476C6F62+
+	?debug	C 616C6C792471756958481A405468726561644030+
+	?debug	C 756E626C6F636B5369676E616C247175695A4822+
+	?debug	C 405468726561644030756E626C6F636B5369676E+
+	?debug	C 616C476C6F62616C6C79247175695C4A14405468+
+	?debug	C 72656164403024626374722471756C75695E4C0F+
+	?debug	C 40546872656164403072756E2471766040040000+
+	?debug	C 0000056D795043421DC008000000
+	?debug	C E27001546470044E6F64656600066C656E677468+
+	?debug	C 0400046865616467481840254C69737424746E71+
+	?debug	C 76247625406572617365247771766A481B40254C+
+	?debug	C 69737424746E717624762540707573682477716E+
+	?debug	C 717624766C481F40254C69737424746E71762476+
+	?debug	C 2540707573684261636B2477716E717624766E48+
+	?debug	C 1640254C69737424746E717624762540706F7024+
+	?debug	C 77717670491740254C69737424746E7176247625+
+	?debug	C 40246264747224717672482040254C6973742474+
+	?debug	C 6E71762476254064656C65746576616C2477716E+
+	?debug	C 7176247674482D40254C69737424746E71762476+
+	?debug	C 254064656C4E6F646524716E3138254C69737424+
+	?debug	C 746E7176247625404E6F646576481940254C6973+
+	?debug	C 7424746E71762476254067657448656164247176+
+	?debug	C 784A1740254C69737424746E7176247625402462+
+	?debug	C 6374722471767BC006000000
+	?debug	C E2000376616C6400046E657874674A2140254C69+
+	?debug	C 737424746E7176247625404E6F64654030246263+
+	?debug	C 747224716E7176247668C008000000
+	?debug	C E27001540A70044E6F64657E00066C656E677468+
+	?debug	C 040004686561647F481540254C69737424747569+
+	?debug	C 25406572617365247771768082481540254C6973+
+	?debug	C 7424747569254070757368247771756980844819+
+	?debug	C 40254C697374247475692540707573684261636B+
+	?debug	C 24777175698086481340254C6973742474756925+
+	?debug	C 40706F70247771768088491440254C6973742474+
+	?debug	C 756925402462647472247176808A481A40254C69+
+	?debug	C 737424747569254064656C65746576616C247771+
+	?debug	C 7569808C482740254C6973742474756925406465+
+	?debug	C 6C4E6F646524716E3135254C6973742474756925+
+	?debug	C 404E6F6465808E481640254C6973742474756925+
+	?debug	C 406765744865616424717680904A1440254C6973+
+	?debug	C 7424747569254024626374722471768093C00600+
+	?debug	C 0000
+	?debug	C E2000376616C0A00046E6578747F4A1B40254C69+
+	?debug	C 73742474756925404E6F64654030246263747224+
+	?debug	C 7175698080C006000000
+	?debug	C E27001541D70044E6F6465809800066C656E6774+
+	?debug	C 68040004686561648099481840254C6973742474+
+	?debug	C 6E335043422540657261736524777176809C481B+
+	?debug	C 40254C69737424746E3350434225407075736824+
+	?debug	C 77716E33504342809E481F40254C69737424746E+
+	?debug	C 335043422540707573684261636B2477716E3350+
+	?debug	C 434280A0481640254C69737424746E3350434225+
+	?debug	C 40706F702477717680A2491740254C6973742474+
+	?debug	C 6E335043422540246264747224717680A4482040+
+	?debug	C 254C69737424746E33504342254064656C657465+
+	?debug	C 76616C2477716E3350434280A6482D40254C6973+
+	?debug	C 7424746E33504342254064656C4E6F646524716E+
+	?debug	C 3138254C69737424746E3350434225404E6F6465+
+	?debug	C 80A8481940254C69737424746E33504342254067+
+	?debug	C 65744865616424717680AA4A1740254C69737424+
+	?debug	C 746E335043422540246263747224717680ADC006+
+	?debug	C 000000
+	?debug	C E2000376616C1D00046E65787480994A2140254C+
+	?debug	C 69737424746E3350434225404E6F646540302462+
+	?debug	C 63747224716E33504342809AC008000000
+	?debug	C E24816405363686564756C657240307075742471+
+	?debug	C 6E3350434280D24812405363686564756C657240+
+	?debug	C 3067657424717680D4C001000000
+	?debug	C E2600E4054696D6572403062726F6A61630A6023+
+	?debug	C 4054696D657240307A6168746576616E615F7072+
+	?debug	C 6F6D656E615F6B6F6E74656B7374610A60154054+
+	?debug	C 696D65724030676C6F62616C4C6F636B436E7404+
+	?debug	C 60174054696D65724030706F7A76616E5F646973+
+	?debug	C 70617463680460124054696D657240306E656564+
+	?debug	C 546F4B696C6C04480F4054696D65724030696E69+
+	?debug	C 7424717680D748124054696D6572403072657374+
+	?debug	C 6F726524717680D9C001000000
+	end
+

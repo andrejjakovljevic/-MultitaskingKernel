@@ -1,0 +1,1929 @@
+	ifndef	??version
+?debug	macro
+	endm
+publicdll macro	name
+	public	name
+	endm
+$comm	macro	name,dist,size,count
+	comm	dist name:BYTE:count*size
+	endm
+	else
+$comm	macro	name,dist,size,count
+	comm	dist name[size]:BYTE:count
+	endm
+	endif
+	?debug	V 300h
+	?debug	S "timer.cpp"
+	?debug	C E9C2B4A2500974696D65722E637070
+	?debug	C E9C19894500C2E2E5C685C74696D65722E68
+	?debug	C E970B1A2500A2E2E5C685C7063622E68
+	?debug	C E97B70A2500D2E2E5C685C7468726561642E68
+	?debug	C E9E27AA5500C2E2E5C685C6C697374612E68
+	?debug	C E94029CA1817633A5C626333315C696E636C7564655C737464696F+
+	?debug	C 2E68
+	?debug	C E94029CA1817633A5C626333315C696E636C7564655C5F64656673+
+	?debug	C 2E68
+	?debug	C E94029CA1818633A5C626333315C696E636C7564655C5F6E66696C+
+	?debug	C 652E68
+	?debug	C E94029CA1817633A5C626333315C696E636C7564655C5F6E756C6C+
+	?debug	C 2E68
+	?debug	C E9C19894500C2E2E5C685C74696D65722E68
+	?debug	C E9DB767A400F2E2E5C685C5343484544554C452E68
+	?debug	C E99A7683500D2E2E5C685C6B657273656D2E68
+	?debug	C E9D99B7D500F2E2E5C685C73656D6170686F722E68
+	?debug	C E9E27AA5500C2E2E5C685C6C697374612E68
+	?debug	C E970B1A2500A2E2E5C685C7063622E68
+	?debug	C E9A58983500E2E2E5C685C50434274696D652E68
+	?debug	C E970B1A2500A2E2E5C685C7063622E68
+	?debug	C E94A7DA5500D2E2E5C685C6C69737461322E68
+	?debug	C E94A7DA5500D2E2E5C685C6C69737461322E68
+	?debug	C E94029CA181A633A5C626333315C696E636C7564655C696F737472+
+	?debug	C 65616D2E68
+	?debug	C E94029CA1815633A5C626333315C696E636C7564655C6D656D2E68
+	?debug	C E94029CA1817633A5C626333315C696E636C7564655C737464696F+
+	?debug	C 2E68
+TIMER_TEXT	segment byte public 'CODE'
+TIMER_TEXT	ends
+	assume	cs:TIMER_TEXT,ds:TIMER_DATA
+TIMER_DATA	segment word public 'FAR_DATA'
+d@	label	byte
+d@w	label	word
+b@	label	byte
+b@w	label	word
+TIMER_DATA	ends
+TIMER5_DATA	segment para public 'FAR_DATA'
+@Timer@0brojac	label	word
+	db	0
+	db	0
+@Timer@0zahtevana_promena_konteksta	label	word
+	db	0
+	db	0
+@Timer@0globalLockCnt	label	word
+	db	0
+	db	0
+@Timer@0pozvan_dispatch	label	word
+	db	0
+	db	0
+@Timer@0needToKill	label	word
+	db	0
+	db	0
+TIMER5_DATA	ends
+TIMER_DATA	segment word public 'FAR_DATA'
+_tsp	label	word
+	db	2 dup (?)
+_tss	label	word
+	db	2 dup (?)
+_tbp	label	word
+	db	2 dup (?)
+_curr	label	dword
+	db	4 dup (?)
+_oldTimerOFF	label	word
+	db	2 dup (?)
+_oldTimerSEG	label	word
+	db	2 dup (?)
+TIMER_DATA	ends
+TIMER_TEXT	segment byte public 'CODE'
+	?debug	C E8010974696D65722E637070C2B4A250
+   ;	
+   ;	void interrupt timer()
+   ;	
+	?debug	L 21
+	assume	cs:TIMER_TEXT
+@timer$qv	proc	far
+	?debug	B
+	push	ax
+	push	bx
+	push	cx
+	push	dx
+	push	es
+	push	ds
+	push	si
+	push	di
+	push	bp
+	mov	bp,TIMER_DATA
+	mov	ds,bp
+	mov	bp,sp
+	?debug	B
+   ;	
+   ;	{  
+   ;		if(!Timer::pozvan_dispatch) 
+   ;	
+	?debug	L 23
+	mov	ax,seg @Timer@0pozvan_dispatch
+	mov	es,ax
+	cmp	word ptr es:@Timer@0pozvan_dispatch,0
+	jne	short @1@282
+   ;	
+   ;		{
+   ;			curr = KernelSem::allSemaphores.head;
+   ;	
+	?debug	L 25
+	mov	ax,seg @KernelSem@0allSemaphores
+	mov	es,ax
+	mov	ax,word ptr es:@KernelSem@0allSemaphores+4
+	mov	dx,word ptr es:@KernelSem@0allSemaphores+2
+	jmp	short @1@170
+@1@86:
+   ;	
+   ;			while (curr!=0)
+   ;			{
+   ;				curr->val->passTime();
+   ;	
+	?debug	L 28
+	les	bx,dword ptr _curr
+	push	word ptr es:[bx+2]
+	push	word ptr es:[bx]
+	call	far ptr @KernelSem@0passTime$qv
+	pop	cx
+	pop	cx
+   ;	
+   ;				if (curr->val->blocked.kolikoOtpustenih>0)
+   ;	
+	?debug	L 29
+	les	bx,dword ptr _curr
+	les	bx,dword ptr es:[bx]
+	cmp	word ptr es:[bx+6],0
+	jle	short @1@142
+   ;	
+   ;				{
+   ;					curr->val->val+=curr->val->blocked.kolikoOtpustenih;
+   ;	
+	?debug	L 31
+	les	bx,dword ptr _curr
+	les	bx,dword ptr es:[bx]
+	mov	ax,word ptr es:[bx+6]
+	les	bx,dword ptr _curr
+	les	bx,dword ptr es:[bx]
+	add	word ptr es:[bx],ax
+   ;	
+   ;					curr->val->blocked.kolikoOtpustenih=0;
+   ;	
+	?debug	L 32
+	les	bx,dword ptr _curr
+	les	bx,dword ptr es:[bx]
+	mov	word ptr es:[bx+6],0
+@1@142:
+   ;	
+   ;				}
+   ;				curr=curr->next;
+   ;	
+	?debug	L 34
+	les	bx,dword ptr _curr
+	mov	ax,word ptr es:[bx+6]
+	mov	dx,word ptr es:[bx+4]
+@1@170:
+	mov	word ptr _curr+2,ax
+	mov	word ptr _curr,dx
+	?debug	L 26
+	mov	ax,word ptr _curr
+	or	ax,word ptr _curr+2
+	jne	short @1@86
+   ;	
+   ;			}
+   ;			asm int 60h;
+   ;	
+	?debug	L 36
+ 	int	 60h
+   ;	
+   ;			tick();
+   ;	
+	?debug	L 37
+	call	far ptr @tick$qv
+@1@282:
+   ;	
+   ;			//printf("brojac=%d\n",Timer::brojac);
+   ;		} 
+   ;		if (!Timer::zahtevana_promena_konteksta && Timer::brojac>0 && !Timer::pozvan_dispatch) 
+   ;	
+	?debug	L 40
+	mov	ax,seg @Timer@0zahtevana_promena_konteksta
+	mov	es,ax
+	cmp	word ptr es:@Timer@0zahtevana_promena_konteksta,0
+	jne	short @1@394
+	mov	ax,seg @Timer@0brojac
+	mov	es,ax
+	cmp	word ptr es:@Timer@0brojac,0
+	jbe	short @1@394
+	mov	ax,seg @Timer@0pozvan_dispatch
+	mov	es,ax
+	cmp	word ptr es:@Timer@0pozvan_dispatch,0
+	jne	short @1@394
+   ;	
+   ;		{	
+   ;			Timer::brojac--;
+   ;	
+	?debug	L 42
+	mov	ax,seg @Timer@0brojac
+	mov	es,ax
+	dec	word ptr es:@Timer@0brojac
+@1@394:
+   ;	
+   ;		} 
+   ;		if (Timer::brojac == 0 || Timer::zahtevana_promena_konteksta || Timer::pozvan_dispatch)
+   ;	
+	?debug	L 44
+	mov	ax,seg @Timer@0brojac
+	mov	es,ax
+	cmp	word ptr es:@Timer@0brojac,0
+	je	short @1@478
+	mov	ax,seg @Timer@0zahtevana_promena_konteksta
+	mov	es,ax
+	cmp	word ptr es:@Timer@0zahtevana_promena_konteksta,0
+	jne	short @1@478
+	mov	ax,seg @Timer@0pozvan_dispatch
+	mov	es,ax
+	cmp	word ptr es:@Timer@0pozvan_dispatch,0
+	jne	@@7
+	jmp	@1@1178
+@@7:
+@1@478:
+   ;	
+   ;		{
+   ;			/*printf("nes1=%d\n",Timer::zahtevana_promena_konteksta);
+   ;			printf("nesto=%d\n",Timer::pozvan_dispatch);
+   ;			printf("brojac=%d\n",Timer::brojac);*/
+   ;			//if (Timer::pozvan_dispatch) printf("pozvan dipatch\n");
+   ;			if (Timer::globalLockCnt==0 || Timer::pozvan_dispatch)
+   ;	
+	?debug	L 50
+	mov	ax,seg @Timer@0globalLockCnt
+	mov	es,ax
+	cmp	word ptr es:@Timer@0globalLockCnt,0
+	je	short @1@534
+	mov	ax,seg @Timer@0pozvan_dispatch
+	mov	es,ax
+	cmp	word ptr es:@Timer@0pozvan_dispatch,0
+	jne	@@8
+	jmp	@1@1150
+@@8:
+@1@534:
+   ;	
+   ;			{
+   ;					//printf("usao u promenu\n");
+   ;					//printf("test\n");
+   ;					Timer::zahtevana_promena_konteksta=0;
+   ;	
+	?debug	L 54
+	mov	ax,seg @Timer@0zahtevana_promena_konteksta
+	mov	es,ax
+	mov	word ptr es:@Timer@0zahtevana_promena_konteksta,0
+   ;	
+   ;					Timer::pozvan_dispatch=0;
+   ;	
+	?debug	L 55
+	mov	ax,seg @Timer@0pozvan_dispatch
+	mov	es,ax
+	mov	word ptr es:@Timer@0pozvan_dispatch,0
+   ;	
+   ;					asm {
+   ;						// cuva sp
+   ;						mov tsp, sp
+   ;	
+	?debug	L 58
+	mov	 _tsp, sp
+   ;	
+   ;						mov tss, ss
+   ;	
+	?debug	L 59
+	mov	 _tss, ss
+   ;	
+   ;						mov tbp,bp
+   ;	
+	?debug	L 60
+	mov	 _tbp,bp
+   ;	
+   ;					}
+   ;					PCB::running->sp = tsp;
+   ;	
+	?debug	L 62
+	mov	ax,seg @PCB@0running
+	mov	es,ax
+	les	bx,dword ptr es:@PCB@0running
+	mov	ax,word ptr _tsp
+	mov	word ptr es:[bx+6],ax
+   ;	
+   ;					PCB::running->ss = tss;
+   ;	
+	?debug	L 63
+	mov	ax,seg @PCB@0running
+	mov	es,ax
+	les	bx,dword ptr es:@PCB@0running
+	mov	ax,word ptr _tss
+	mov	word ptr es:[bx+4],ax
+   ;	
+   ;					PCB::running->bp = tbp;
+   ;	
+	?debug	L 64
+	mov	ax,seg @PCB@0running
+	mov	es,ax
+	les	bx,dword ptr es:@PCB@0running
+	mov	ax,word ptr _tbp
+	mov	word ptr es:[bx+8],ax
+   ;	
+   ;					PCB::running->lockCount=Timer::globalLockCnt;
+   ;	
+	?debug	L 65
+	mov	ax,seg @PCB@0running
+	mov	es,ax
+	les	bx,dword ptr es:@PCB@0running
+	mov	ax,seg @Timer@0globalLockCnt
+	push	es
+	mov	es,ax
+	mov	ax,word ptr es:@Timer@0globalLockCnt
+	pop	es
+	mov	word ptr es:[bx+12],ax
+   ;	
+   ;					//running= getNextPCBToExecute();	// Scheduler
+   ;					if (PCB::running->state==READY && PCB::running!=PCB::initial && PCB::running!=PCB::dummyPCB) Scheduler::put((PCB*)PCB::runni
+   ;	
+	?debug	L 67
+	mov	ax,seg @PCB@0running
+	mov	es,ax
+	les	bx,dword ptr es:@PCB@0running
+	cmp	word ptr es:[bx+18],1
+	jne	short @1@814
+	mov	ax,seg @PCB@0running
+	mov	es,ax
+	mov	ax,word ptr es:@PCB@0running+2
+	mov	dx,word ptr es:@PCB@0running
+	mov	bx,seg @PCB@0initial
+	mov	es,bx
+	cmp	ax,word ptr es:@PCB@0initial+2
+	jne	short @1@730
+	cmp	dx,word ptr es:@PCB@0initial
+	je	short @1@814
+@1@730:
+	mov	ax,seg @PCB@0running
+	mov	es,ax
+	mov	ax,word ptr es:@PCB@0running+2
+	mov	dx,word ptr es:@PCB@0running
+	mov	bx,seg @PCB@0dummyPCB
+	mov	es,bx
+	cmp	ax,word ptr es:@PCB@0dummyPCB+2
+	jne	short @1@786
+	cmp	dx,word ptr es:@PCB@0dummyPCB
+	je	short @1@814
+@1@786:
+	mov	ax,seg @PCB@0running
+	mov	es,ax
+	push	word ptr es:@PCB@0running+2
+	push	word ptr es:@PCB@0running
+	call	far ptr @Scheduler@0put$qn3PCB
+	pop	cx
+	pop	cx
+@1@814:
+   ;	
+   ;				do
+   ;				{
+   ;					Timer::needToKill=0;
+   ;	
+	?debug	L 70
+	mov	ax,seg @Timer@0needToKill
+	mov	es,ax
+	mov	word ptr es:@Timer@0needToKill,0
+   ;	
+   ;					PCB::running=Scheduler::get();
+   ;	
+	?debug	L 71
+	call	far ptr @Scheduler@0get$qv
+	mov	bx,seg @PCB@0running
+	mov	es,bx
+	mov	word ptr es:@PCB@0running+2,dx
+	mov	word ptr es:@PCB@0running,ax
+   ;	
+   ;					if (PCB::running==0 && PCB::runningThreads>0) PCB::running=PCB::dummyPCB;
+   ;	
+	?debug	L 72
+	mov	ax,seg @PCB@0running
+	mov	es,ax
+	mov	ax,word ptr es:@PCB@0running
+	or	ax,word ptr es:@PCB@0running+2
+	jne	short @1@898
+	mov	ax,seg @PCB@0runningThreads
+	mov	es,ax
+	cmp	word ptr es:@PCB@0runningThreads,0
+	jle	short @1@898
+	mov	ax,seg @PCB@0dummyPCB
+	mov	es,ax
+	mov	ax,word ptr es:@PCB@0dummyPCB+2
+	mov	dx,word ptr es:@PCB@0dummyPCB
+	mov	bx,seg @PCB@0running
+	mov	es,bx
+	mov	word ptr es:@PCB@0running+2,ax
+	mov	word ptr es:@PCB@0running,dx
+	jmp	short @1@954
+@1@898:
+   ;	
+   ;					else if (PCB::running==0) 
+   ;	
+	?debug	L 73
+	mov	ax,seg @PCB@0running
+	mov	es,ax
+	mov	ax,word ptr es:@PCB@0running
+	or	ax,word ptr es:@PCB@0running+2
+	jne	short @1@954
+   ;	
+   ;					{
+   ;						PCB::running=PCB::initial;
+   ;	
+	?debug	L 75
+	mov	ax,seg @PCB@0initial
+	mov	es,ax
+	mov	ax,word ptr es:@PCB@0initial+2
+	mov	dx,word ptr es:@PCB@0initial
+	mov	bx,seg @PCB@0running
+	mov	es,bx
+	mov	word ptr es:@PCB@0running+2,ax
+	mov	word ptr es:@PCB@0running,dx
+@1@954:
+   ;	
+   ;					}
+   ;					tsp = PCB::running->sp;
+   ;	
+	?debug	L 77
+	mov	ax,seg @PCB@0running
+	mov	es,ax
+	les	bx,dword ptr es:@PCB@0running
+	mov	ax,word ptr es:[bx+6]
+	mov	word ptr _tsp,ax
+   ;	
+   ;					tss = PCB::running->ss;
+   ;	
+	?debug	L 78
+	mov	ax,seg @PCB@0running
+	mov	es,ax
+	les	bx,dword ptr es:@PCB@0running
+	mov	ax,word ptr es:[bx+4]
+	mov	word ptr _tss,ax
+   ;	
+   ;					tbp = PCB::running->bp;
+   ;	
+	?debug	L 79
+	mov	ax,seg @PCB@0running
+	mov	es,ax
+	les	bx,dword ptr es:@PCB@0running
+	mov	ax,word ptr es:[bx+8]
+	mov	word ptr _tbp,ax
+   ;	
+   ;					Timer::globalLockCnt=PCB::running->lockCount;
+   ;	
+	?debug	L 80
+	mov	ax,seg @PCB@0running
+	mov	es,ax
+	les	bx,dword ptr es:@PCB@0running
+	mov	ax,word ptr es:[bx+12]
+	mov	dx,seg @Timer@0globalLockCnt
+	mov	es,dx
+	mov	word ptr es:@Timer@0globalLockCnt,ax
+   ;	
+   ;					Timer::brojac = PCB::running->kvant;
+   ;	
+	?debug	L 81
+	mov	ax,seg @PCB@0running
+	mov	es,ax
+	les	bx,dword ptr es:@PCB@0running
+	mov	ax,word ptr es:[bx+10]
+	mov	dx,seg @Timer@0brojac
+	mov	es,dx
+	mov	word ptr es:@Timer@0brojac,ax
+   ;	
+   ;					//printf("id=%d\n",Thread::getRunningId());
+   ;					asm {
+   ;						mov sp, tsp   // restore sp
+   ;	
+	?debug	L 84
+	mov	 sp, _tsp   
+   ;	
+   ;						mov ss, tss
+   ;	
+	?debug	L 85
+	mov	 ss, _tss
+   ;	
+   ;						mov bp, tbp
+   ;	
+	?debug	L 86
+	mov	 bp, _tbp
+   ;	
+   ;					}
+   ;					PCB::running->doSignals();
+   ;	
+	?debug	L 88
+	mov	ax,seg @PCB@0running
+	mov	es,ax
+	push	word ptr es:@PCB@0running+2
+	push	word ptr es:@PCB@0running
+	call	far ptr @PCB@0doSignals$wqv
+	pop	cx
+	pop	cx
+   ;	
+   ;					//printf("Timerneed=%d\n",Timer::needToKill);
+   ;				} while (Timer::needToKill==1);
+   ;	
+	?debug	L 90
+	mov	ax,seg @Timer@0needToKill
+	mov	es,ax
+	cmp	word ptr es:@Timer@0needToKill,1
+	jne	@@9
+	jmp	@1@814
+@@9:
+   ;	
+   ;			}
+   ;	
+	?debug	L 91
+	jmp	short @1@1178
+@1@1150:
+   ;	
+   ;			else Timer::zahtevana_promena_konteksta=1;
+   ;	
+	?debug	L 92
+	mov	ax,seg @Timer@0zahtevana_promena_konteksta
+	mov	es,ax
+	mov	word ptr es:@Timer@0zahtevana_promena_konteksta,1
+@1@1178:
+   ;	
+   ;		}
+   ;		// poziv stare prekidne rutine koja se 
+   ;	     // nalazila na 08h, a sad je na 60h
+   ;	     // poziva se samo kada nije zahtevana promena
+   ;	     // konteksta – tako se da se stara
+   ;	     // rutina poziva samo kada je stvarno doslo do prekida	
+   ;	                                             
+   ;		//zahtevana_promena_konteksta = 0;
+   ;	}
+   ;	
+	?debug	L 101
+	pop	bp
+	pop	di
+	pop	si
+	pop	ds
+	pop	es
+	pop	dx
+	pop	cx
+	pop	bx
+	pop	ax
+	iret	
+	?debug	E
+	?debug	E
+@timer$qv	endp
+   ;	
+   ;	void Timer::init()
+   ;	
+	?debug	L 104
+	assume	cs:TIMER_TEXT
+@Timer@0init$qv	proc	far
+	?debug	B
+	push	bp
+	mov	bp,sp
+	push	ds
+	mov	ax,TIMER_DATA
+	mov	ds,ax
+	?debug	C F80F4054696D65724030696E6974247176
+	?debug	B
+   ;	
+   ;	{
+   ;		asm{
+   ;			cli
+   ;	
+	?debug	L 107
+	cli	
+   ;	
+   ;			push es
+   ;	
+	?debug	L 108
+	push	 es
+   ;	
+   ;			push ax
+   ;	
+	?debug	L 109
+	push	 ax
+   ;	
+   ;	
+   ;			mov ax,0   //  ; inicijalizuje rutinu za tajmer
+   ;	
+	?debug	L 111
+	mov	 ax,0   
+   ;	
+   ;			mov es,ax
+   ;	
+	?debug	L 112
+	mov	 es,ax
+   ;	
+   ;	
+   ;			mov ax, word ptr es:0022h //; pamti staru rutinu
+   ;	
+	?debug	L 114
+	mov	 ax, word ptr es:0022h 
+   ;	
+   ;			mov word ptr oldTimerSEG, ax	
+   ;	
+	?debug	L 115
+	mov	 word ptr _oldTimerSEG, ax	
+   ;	
+   ;			mov ax, word ptr es:0020h	
+   ;	
+	?debug	L 116
+	mov	 ax, word ptr es:0020h	
+   ;	
+   ;			mov word ptr oldTimerOFF, ax	
+   ;	
+	?debug	L 117
+	mov	 word ptr _oldTimerOFF, ax	
+   ;	
+   ;	
+   ;			mov word ptr es:0022h, seg timer	 //postavlja 
+   ;	
+	?debug	L 119
+	mov	 word ptr es:0022h, seg _timer	 
+   ;	
+   ;			mov word ptr es:0020h, offset timer //novu rutinu
+   ;	
+	?debug	L 120
+	mov	 word ptr es:0020h, offset _timer 
+   ;	
+   ;	
+   ;			mov ax, oldTimerSEG	 //	postavlja staru rutinu	
+   ;	
+	?debug	L 122
+	mov	 ax, _oldTimerSEG	 
+   ;	
+   ;			mov word ptr es:0182h, ax //; na int 60h
+   ;	
+	?debug	L 123
+	mov	 word ptr es:0182h, ax 
+   ;	
+   ;			mov ax, oldTimerOFF
+   ;	
+	?debug	L 124
+	mov	 ax, _oldTimerOFF
+   ;	
+   ;			mov word ptr es:0180h, ax
+   ;	
+	?debug	L 125
+	mov	 word ptr es:0180h, ax
+   ;	
+   ;	
+   ;			pop ax
+   ;	
+	?debug	L 127
+	pop	 ax
+   ;	
+   ;			pop es
+   ;	
+	?debug	L 128
+	pop	 es
+   ;	
+   ;			sti
+   ;	
+	?debug	L 129
+	sti	
+   ;	
+   ;		}
+   ;	}
+   ;	
+	?debug	L 131
+	pop	ds
+	pop	bp
+	ret	
+	?debug	E
+	?debug	E
+@Timer@0init$qv	endp
+   ;	
+   ;	void Timer::restore()
+   ;	
+	?debug	L 133
+	assume	cs:TIMER_TEXT
+@Timer@0restore$qv	proc	far
+	?debug	B
+	push	bp
+	mov	bp,sp
+	push	ds
+	mov	ax,TIMER_DATA
+	mov	ds,ax
+	?debug	C F8124054696D65724030726573746F7265247176
+	?debug	B
+   ;	
+   ;	{
+   ;		asm {
+   ;			cli
+   ;	
+	?debug	L 136
+	cli	
+   ;	
+   ;			push es
+   ;	
+	?debug	L 137
+	push	 es
+   ;	
+   ;			push ax
+   ;	
+	?debug	L 138
+	push	 ax
+   ;	
+   ;	
+   ;			mov ax,0
+   ;	
+	?debug	L 140
+	mov	 ax,0
+   ;	
+   ;			mov es,ax
+   ;	
+	?debug	L 141
+	mov	 es,ax
+   ;	
+   ;	
+   ;	
+   ;			mov ax, word ptr oldTimerSEG
+   ;	
+	?debug	L 144
+	mov	 ax, word ptr _oldTimerSEG
+   ;	
+   ;			mov word ptr es:0022h, ax
+   ;	
+	?debug	L 145
+	mov	 word ptr es:0022h, ax
+   ;	
+   ;			mov ax, word ptr oldTimerOFF
+   ;	
+	?debug	L 146
+	mov	 ax, word ptr _oldTimerOFF
+   ;	
+   ;			mov word ptr es:0020h, ax
+   ;	
+	?debug	L 147
+	mov	 word ptr es:0020h, ax
+   ;	
+   ;	
+   ;			pop ax
+   ;	
+	?debug	L 149
+	pop	 ax
+   ;	
+   ;			pop es
+   ;	
+	?debug	L 150
+	pop	 es
+   ;	
+   ;			sti
+   ;	
+	?debug	L 151
+	sti	
+   ;	
+   ;		}
+   ;	}
+   ;	
+	?debug	L 153
+	pop	ds
+	pop	bp
+	ret	
+	?debug	E
+	?debug	E
+@Timer@0restore$qv	endp
+	?debug	C E9
+	?debug	C FA00000000
+TIMER_TEXT	ends
+TIMER_DATA	segment word public 'FAR_DATA'
+s@	label	byte
+TIMER_DATA	ends
+TIMER_TEXT	segment byte public 'CODE'
+TIMER_TEXT	ends
+	public	_oldTimerSEG
+	public	_oldTimerOFF
+	extrn	@tick$qv:far
+	public	_curr
+	public	_tbp
+	public	_tss
+	public	_tsp
+	extrn	@KernelSem@0passTime$qv:far
+	extrn	@KernelSem@0allSemaphores:word
+	extrn	@Scheduler@0get$qv:far
+	extrn	@Scheduler@0put$qn3PCB:far
+	extrn	@PCB@0doSignals$wqv:far
+	extrn	@PCB@0pomlist:word
+	extrn	@PCB@0runningThreads:word
+	extrn	@PCB@0dummyPCB:dword
+	extrn	@PCB@0initial:dword
+	extrn	@PCB@0allPCB:word
+	extrn	@PCB@0running:dword
+	public	@timer$qv
+	public	@Timer@0restore$qv
+	public	@Timer@0init$qv
+	public	@Timer@0needToKill
+	public	@Timer@0pozvan_dispatch
+	public	@Timer@0globalLockCnt
+	public	@Timer@0zahtevana_promena_konteksta
+	public	@Timer@0brojac
+_s@	equ	s@
+	?debug	C EA050D
+	?debug	C EC0C5F6F6C6454696D65725345470A0000
+	?debug	C EC0C5F6F6C6454696D65724F46460A0000
+	?debug	C E31800000023010400
+	?debug	C EB08407469636B2471761800
+	?debug	C E31A1940254C69737424746E394B65726E656C53+
+	?debug	C 656D25404E6F646508002E01
+	?debug	C ED00010000010F00
+	?debug	C E31C094B65726E656C53656D0E002E02
+	?debug	C ED00020000050E00
+	?debug	C E31D1440254C69737424746E394B65726E656C53+
+	?debug	C 656D2506002E03
+	?debug	C ED00030000110E00
+	?debug	C E31E0000002D0104091D00
+	?debug	C E3200000002D0104091D00
+	?debug	C E3220000002D0104091D00
+	?debug	C E3240000002D1B04091D00
+	?debug	C E3260000002D0104091D00
+	?debug	C E3280000002D0104091D00
+	?debug	C E32A0000002D0104091D00
+	?debug	C E32C0000002D1904091D00
+	?debug	C E32E000400161D00
+	?debug	C E32F0000002D2E04091D00
+	?debug	C E3320953656D6170686F726508002E04
+	?debug	C ED000400001F0E00
+	?debug	C E3330000002D3104013200144053656D6170686F+
+	?debug	C 726540302462637472247169
+	?debug	C E3350000002D0104013200144053656D6170686F+
+	?debug	C 726540302462647472247176
+	?debug	C E3370000002D0404013202144053656D6170686F+
+	?debug	C 726540307761697424717569
+	?debug	C E3390000002D0404013204154053656D6170686F+
+	?debug	C 726540307369676E616C247169
+	?debug	C E33B0000002D0404013200134053656D6170686F+
+	?debug	C 7265403076616C24787176
+	?debug	C E331000400163200
+	?debug	C E33D0750434274696D6508002E05
+	?debug	C ED00050000270E00
+	?debug	C E33E0E4050434274696D654030456C656D06002E+
+	?debug	C 06
+	?debug	C ED000600002E0F00
+	?debug	C E34003504342A8002E07
+	?debug	C ED00070000320E00
+	?debug	C E341000400164000
+	?debug	C E342000400160A00
+	?debug	C E34306537461746573020022000080FF7F5B
+	?debug	C E3460654687265616408002E08
+	?debug	C ED000800005F0E00
+	?debug	C E3470000002D0104014600114054687265616440+
+	?debug	C 307374617274247176
+	?debug	C E3490000002D01040146001A4054687265616440+
+	?debug	C 3077616974546F436F6D706C657465247176
+	?debug	C E34B0000002D0104014600114054687265616440+
+	?debug	C 302462647472247176
+	?debug	C E34D0000002D0404014600114054687265616440+
+	?debug	C 306765744964247176
+	?debug	C E34F0000002D0404014600184054687265616440+
+	?debug	C 3067657452756E6E696E674964247176
+	?debug	C E3510000002D4504014600194054687265616440+
+	?debug	C 3067657454687265616442794964247169
+	?debug	C E3530000002D0104014600134054687265616440+
+	?debug	C 307369676E616C24717569
+	?debug	C E3550000002D0104014600214054687265616440+
+	?debug	C 30726567697374657248616E646C657224717569+
+	?debug	C 6E71762476
+	?debug	C E3570000002D0104014600224054687265616440+
+	?debug	C 30756E7265676973746572416C6C48616E646C65+
+	?debug	C 727324717569
+	?debug	C E3590000002D0104014600184054687265616440+
+	?debug	C 3073776170247175696E717624767432
+	?debug	C E35B0000002D0104014600184054687265616440+
+	?debug	C 30626C6F636B5369676E616C24717569
+	?debug	C E35D0000002D0104014600204054687265616440+
+	?debug	C 30626C6F636B5369676E616C476C6F62616C6C79+
+	?debug	C 24717569
+	?debug	C E35F0000002D01040146001A4054687265616440+
+	?debug	C 30756E626C6F636B5369676E616C24717569
+	?debug	C E3610000002D0104014600224054687265616440+
+	?debug	C 30756E626C6F636B5369676E616C476C6F62616C+
+	?debug	C 6C7924717569
+	?debug	C E3630000002D4504014600144054687265616440+
+	?debug	C 3024626374722471756C7569
+	?debug	C E3650000002D0104094602
+	?debug	C E345000400164600
+	?debug	C E3680E40254C69737424746E717624762506002E+
+	?debug	C 09
+	?debug	C ED00090000720E00
+	?debug	C E36A00000023010400
+	?debug	C E369000400166A00
+	?debug	C E36B1340254C69737424746E7176247625404E6F+
+	?debug	C 646508002E0A
+	?debug	C ED000A000080800F00
+	?debug	C E36C000400166B00
+	?debug	C E36D0000002D6C04096B00
+	?debug	C E36F0000002D0104096800
+	?debug	C E3710000002D0104096800
+	?debug	C E3730000002D0104096800
+	?debug	C E3750000002D6904096800
+	?debug	C E3770000002D0104096800
+	?debug	C E3790000002D0104096800
+	?debug	C E37B0000002D0104096800
+	?debug	C E37D0000002D6C04096800
+	?debug	C E37F000400166800
+	?debug	C E380800000002D7F04096800
+	?debug	C E3670060001A68
+	?debug	C E380820B40254C697374247475692506002E0B
+	?debug	C ED000B000080840E00
+	?debug	C E380831040254C6973742474756925404E6F6465+
+	?debug	C 06002E0C
+	?debug	C ED000C000080920F00
+	?debug	C E3808400040016808300
+	?debug	C E380850000002D80840409808300
+	?debug	C E380870000002D010409808200
+	?debug	C E380890000002D010409808200
+	?debug	C E3808B0000002D010409808200
+	?debug	C E3808D0000002D0A0409808200
+	?debug	C E3808F0000002D010409808200
+	?debug	C E380910000002D010409808200
+	?debug	C E380930000002D010409808200
+	?debug	C E380950000002D80840409808200
+	?debug	C E3809700040016808200
+	?debug	C E380980000002D80970409808200
+	?debug	C E3809A0020001A04
+	?debug	C E3809B0020001A04
+	?debug	C E3809C0E40254C69737424746E33504342250600+
+	?debug	C 2E0D
+	?debug	C ED000D000080960E00
+	?debug	C E3809D1340254C69737424746E3350434225404E+
+	?debug	C 6F646508002E0E
+	?debug	C ED000E000080A40F00
+	?debug	C E3809E00040016809D00
+	?debug	C E3809F0000002D809E0409809D00
+	?debug	C E380A10000002D010409809C00
+	?debug	C E380A30000002D010409809C00
+	?debug	C E380A50000002D010409809C00
+	?debug	C E380A70000002D3F0409809C00
+	?debug	C E380A90000002D010409809C00
+	?debug	C E380AB0000002D010409809C00
+	?debug	C E380AD0000002D010409809C00
+	?debug	C E380AF0000002D809E0409809C00
+	?debug	C E380B100040016809C00
+	?debug	C E380B20000002D80B10409809C00
+	?debug	C E380B40000002D3F040140001140504342403024+
+	?debug	C 626374722471756C7569
+	?debug	C E380B60000002D3F040140001940504342403024+
+	?debug	C 6263747224716E36546872656164756C7569
+	?debug	C E380B80000002D01040140001740504342403077+
+	?debug	C 72617070657224716E36546872656164
+	?debug	C E380BA0000002D01040140001840504342403061+
+	?debug	C 6464546F416C6C50434224716E33504342
+	?debug	C E380BC0000002D01040140001D40504342403064+
+	?debug	C 656C65746546726F6D416C6C50434224716E3350+
+	?debug	C 4342
+	?debug	C E380BE0000002D01040140001D40504342403061+
+	?debug	C 6464546F426C6F636B65644C69737424716E3350+
+	?debug	C 4342
+	?debug	C E380C00000002D01040140001440504342403075+
+	?debug	C 6E626C6F636B416C6C24777176
+	?debug	C E380C20000002D01040140000E40504342403024+
+	?debug	C 62647472247176
+	?debug	C E380C40000002D01040140001140504342403073+
+	?debug	C 69676E616C2477717569
+	?debug	C E380C60000002D01040140001E40504342403072+
+	?debug	C 6567697374657248616E646C6572247175696E71+
+	?debug	C 762476
+	?debug	C E380C80000002D01040140001F40504342403075+
+	?debug	C 6E7265676973746572416C6C48616E646C657273+
+	?debug	C 24717569
+	?debug	C E380CA0000002D01040140001540504342403073+
+	?debug	C 776170247175696E717624767432
+	?debug	C E380CC0000002D01040140001540504342403062+
+	?debug	C 6C6F636B5369676E616C24717569
+	?debug	C E380CE0000002D01040140001D40504342403062+
+	?debug	C 6C6F636B5369676E616C476C6F62616C6C792471+
+	?debug	C 7569
+	?debug	C E380D00000002D01040140001740504342403075+
+	?debug	C 6E626C6F636B5369676E616C24717569
+	?debug	C E380D20000002D01040140001F40504342403075+
+	?debug	C 6E626C6F636B5369676E616C476C6F62616C6C79+
+	?debug	C 24717569
+	?debug	C E380D40000002D01040140001340504342403064+
+	?debug	C 6F5369676E616C7324777176
+	?debug	C E33F000400164000
+	?debug	C E380D6000400163E00
+	?debug	C E380D70000002D80D604093E00
+	?debug	C E380D91A40254C69737456616C24743132504342+
+	?debug	C 74696D6540456C656D2506002E0F
+	?debug	C ED000F000080A80E00
+	?debug	C E380DA1F40254C69737456616C24743132504342+
+	?debug	C 74696D6540456C656D25404E6F64650A002E10
+	?debug	C ED0010000080B40F00
+	?debug	C E380DB0004001680DA00
+	?debug	C E380DC0000002D80DB040980DA00
+	?debug	C E380DE0000002D01040980D900
+	?debug	C E380E00000002D01040980D900
+	?debug	C E380E20000002D3E040980D900
+	?debug	C E380E40000002D01040980D900
+	?debug	C E380E60000002D01040980D900
+	?debug	C E380E80004001680D900
+	?debug	C E380E90000002D80E8040980D900
+	?debug	C E380EB0000002D3E040980D900
+	?debug	C E380ED0000002D0104013D00154050434274696D+
+	?debug	C 6540307061737354696D65247176
+	?debug	C E380EF0000002D0104013D00194050434274696D+
+	?debug	C 65403061646450434224716E335043427569
+	?debug	C E380F10000002D0104013D00164050434274696D+
+	?debug	C 6540307369676E616C4F6E65247176
+	?debug	C E380F30000002D0404011C0014404B65726E656C+
+	?debug	C 53656D40307761697424717569
+	?debug	C E380F50000002D0404011C0015404B65726E656C+
+	?debug	C 53656D40307369676E616C247169
+	?debug	C E380F70000002D0104011C0015404B65726E656C+
+	?debug	C 53656D4030626C6F636B24717569
+	?debug	C E380F90000002D0104011C0016404B65726E656C+
+	?debug	C 53656D4030756E626C6F636B247176
+	?debug	C E380FB0000002D1B04011C001F404B65726E656C+
+	?debug	C 53656D4030246263747224716E3953656D617068+
+	?debug	C 6F726569
+	?debug	C E380FD0000002D0104011C0014404B65726E656C+
+	?debug	C 53656D40302462647472247176
+	?debug	C E380FF0000002D0104011C0017404B65726E656C+
+	?debug	C 53656D40307061737354696D65247176
+	?debug	C E31B000400161C00
+	?debug	C E381010000002D1904091A00
+	?debug	C E319000400161A00
+	?debug	C EC055F63757272190000
+	?debug	C EC045F7462700A0000
+	?debug	C EC045F7473730A0000
+	?debug	C EC045F7473700A0000
+	?debug	C E3810603696F732A002E14
+	?debug	C ED0014000080B80E00
+	?debug	C E3810708696F5F7374617465020022000080FF7F+
+	?debug	C 80F6
+	?debug	C E38109096F70656E5F6D6F6465020022000080FF+
+	?debug	C 7F80FB
+	?debug	C E3810B087365656B5F646972020022000080FF7F+
+	?debug	C 8103
+	?debug	C E3810D00040016810600
+	?debug	C E3810E0000002D810D04018106001840696F7340+
+	?debug	C 30246263747224716E3973747265616D627566
+	?debug	C E381100000002D0104018106000E40696F734030+
+	?debug	C 2462647472247176
+	?debug	C E381120000002D060409810600
+	?debug	C E381140000002D0604018106000E40696F734030+
+	?debug	C 666C61677324716C
+	?debug	C E381160000002D0604018106000E40696F734030+
+	?debug	C 7365746624716C6C
+	?debug	C E381180000002D0604018106000D40696F734030+
+	?debug	C 7365746624716C
+	?debug	C E3811A0000002D0604018106000F40696F734030+
+	?debug	C 756E7365746624716C
+	?debug	C E3811C0000002D040409810600
+	?debug	C E3811E0000002D040409810600
+	?debug	C E381200000002D020409810600
+	?debug	C E381220000002D020409810600
+	?debug	C E381240000002D040409810600
+	?debug	C E381260000002D040409810600
+	?debug	C E38129076F73747265616D30002E15
+	?debug	C ED0015020081060E011480
+	?debug	C E3812A0000002D812804018129001C406F737472+
+	?debug	C 65616D4030246263747224716E3973747265616D+
+	?debug	C 627566
+	?debug	C E3812C0000002D01040181290012406F73747265+
+	?debug	C 616D40302462647472247176
+	?debug	C E3812E0000002D8128040181290012406F737472+
+	?debug	C 65616D40302462637472247169
+	?debug	C E381300000002D8128040181290015406F737472+
+	?debug	C 65616D403024626374722471696E7A63
+	?debug	C E381320000002D040409812900
+	?debug	C E381340000002D010409812900
+	?debug	C E3813600040035812900
+	?debug	C E381370000002D8136040181290012406F737472+
+	?debug	C 65616D4030666C757368247176
+	?debug	C E381390000002D8136040181290012406F737472+
+	?debug	C 65616D40307365656B7024716C
+	?debug	C E3813B0000002D813604018129001B406F737472+
+	?debug	C 65616D40307365656B7024716C387365656B5F64+
+	?debug	C 6972
+	?debug	C E3813D0000002D06040181290012406F73747265+
+	?debug	C 616D403074656C6C70247176
+	?debug	C E3813F0000002D81360409812900
+	?debug	C E381410000002D8136040181290016406F737472+
+	?debug	C 65616D4030777269746524716E787A6369
+	?debug	C E381430000002D81360409812900
+	?debug	C E381450000002D8136040581290013406F737472+
+	?debug	C 65616D403024626C736824717A63
+	?debug	C E381470000002D8136040D812900
+	?debug	C E381490000002D8136040D812900
+	?debug	C E3814B0000002D8136040D812900
+	?debug	C E3814D0000002D8136040D812900
+	?debug	C E3814F0000002D8136040D812900
+	?debug	C E381510000002D8136040581290012406F737472+
+	?debug	C 65616D403024626C736824716C
+	?debug	C E381530000002D8136040581290013406F737472+
+	?debug	C 65616D403024626C73682471756C
+	?debug	C E381550000002D8136040D812900
+	?debug	C E381570000002D8136040D812900
+	?debug	C E381590000002D8136040581290012406F737472+
+	?debug	C 65616D403024626C7368247167
+	?debug	C E3815B0000002D8136040D812900
+	?debug	C E3815D0000002D8136040D812900
+	?debug	C E3815F0000002D8136040581290013406F737472+
+	?debug	C 65616D403024626C736824716E76
+	?debug	C E381610000002D813604058129001C406F737472+
+	?debug	C 65616D403024626C736824716E3973747265616D+
+	?debug	C 627566
+	?debug	C E381630000002D8136040D812900
+	?debug	C E381650000002D813604058129001E406F737472+
+	?debug	C 65616D403024626C736824716E716D33696F7324+
+	?debug	C 6D33696F73
+	?debug	C E381670000002D04040181290014406F73747265+
+	?debug	C 616D4030646F5F6F706678247176
+	?debug	C E381690000002D01040181290014406F73747265+
+	?debug	C 616D4030646F5F6F736678247176
+	?debug	C E3816B0000002D8128040181290012406F737472+
+	?debug	C 65616D40302462637472247176
+	?debug	C E3816D0000002D01040181290018406F73747265+
+	?debug	C 616D40306F757473747224716E787A637431
+	?debug	C E3812800040016812900
+	?debug	C E3816F0000002D812804018106001440696F7340+
+	?debug	C 3074696524716E376F73747265616D
+	?debug	C E381710000002D81280409810600
+	?debug	C E381730000002D040409810600
+	?debug	C E381750000002D040409810600
+	?debug	C E381770000002D040409810600
+	?debug	C E381790000002D040409810600
+	?debug	C E3817B0000002D040409810600
+	?debug	C E3817D0000002D0104018106000E40696F734030+
+	?debug	C 636C656172247169
+	?debug	C E3817F000400160100
+	?debug	C E381800000002D817F0409810600
+	?debug	C E381820000002D04040D810600
+	?debug	C E381850973747265616D62756628002E16
+	?debug	C ED0016000081290E00
+	?debug	C E381860000002D81840401818500144073747265+
+	?debug	C 616D62756640302462637472247176
+	?debug	C E381880000002D81840401818500174073747265+
+	?debug	C 616D6275664030246263747224716E7A6369
+	?debug	C E3818A0000002D01040181850014407374726561+
+	?debug	C 6D62756640302462647472247176
+	?debug	C E3818C0000002D81840401818502184073747265+
+	?debug	C 616D627566403073657462756624716E7A6369
+	?debug	C E3818E0000002D81840409818500
+	?debug	C E381900000002D81840401818500194073747265+
+	?debug	C 616D627566403073657462756624716E7A636969
+	?debug	C E381920000002D040409818500
+	?debug	C E381940000002D040409818500
+	?debug	C E381960000002D040409818500
+	?debug	C E381980000002D010409818500
+	?debug	C E3819A0000002D04040181850017407374726561+
+	?debug	C 6D6275664030736765746E24716E7A6369
+	?debug	C E3819C0000002D0404018185041A407374726561+
+	?debug	C 6D6275664030646F5F736765746E24716E7A6369
+	?debug	C E3819E0000002D04040181850618407374726561+
+	?debug	C 6D6275664030756E646572666C6F77247176
+	?debug	C E381A00000002D040409818500
+	?debug	C E381A20000002D04040181850818407374726561+
+	?debug	C 6D6275664030706261636B6661696C247169
+	?debug	C E381A40000002D040409818500
+	?debug	C E381A60000002D040409818500
+	?debug	C E381A80000002D04040181850018407374726561+
+	?debug	C 6D6275664030737075746E24716E787A6369
+	?debug	C E381AA0000002D04040181850A1B407374726561+
+	?debug	C 6D6275664030646F5F737075746E24716E787A63+
+	?debug	C 69
+	?debug	C E381AC0000002D04040181850C17407374726561+
+	?debug	C 6D62756640306F766572666C6F77247169
+	?debug	C E381AE0000002D040409818500
+	?debug	C E381B00000002D06040181850E20407374726561+
+	?debug	C 6D62756640307365656B6F666624716C38736565+
+	?debug	C 6B5F64697269
+	?debug	C E381B20000002D06040181851017407374726561+
+	?debug	C 6D62756640307365656B706F7324716C69
+	?debug	C E381B40000002D04040181851213407374726561+
+	?debug	C 6D627566403073796E63247176
+	?debug	C E381B60000002D01040181850012407374726561+
+	?debug	C 6D6275664030646270247176
+	?debug	C E381B8000400160200
+	?debug	C E381B90000002D81B80409818500
+	?debug	C E381BB0000002D81B80409818500
+	?debug	C E381BD0000002D040409818500
+	?debug	C E381BF0000002D81B80409818500
+	?debug	C E381C10000002D81B80409818500
+	?debug	C E381C30000002D81B80409818500
+	?debug	C E381C50000002D81B80409818500
+	?debug	C E381C70000002D81B80409818500
+	?debug	C E381C90000002D81B80409818500
+	?debug	C E381CB0000002D01040181850017407374726561+
+	?debug	C 6D62756640307365747024716E7A637431
+	?debug	C E381CD0000002D01040181850019407374726561+
+	?debug	C 6D62756640307365746724716E7A6374317431
+	?debug	C E381CF0000002D010409818500
+	?debug	C E381D10000002D010409818500
+	?debug	C E381D30000002D01040181850018407374726561+
+	?debug	C 6D62756640307365746224716E7A63743169
+	?debug	C E381D50000002D010409818500
+	?debug	C E381D70000002D040409818500
+	?debug	C E381D90000002D040409818500
+	?debug	C E381DB0000002D04040181851419407374726561+
+	?debug	C 6D6275664030646F616C6C6F63617465247176
+	?debug	C E381DD0000002D04040181850018407374726561+
+	?debug	C 6D6275664030646F5F736E65787463247176
+	?debug	C E381DF0000002D818404018185001E4073747265+
+	?debug	C 616D6275664030246263747224716D3973747265+
+	?debug	C 616D627566
+	?debug	C E381E10000002D0104058185001E407374726561+
+	?debug	C 6D6275664030246261736724716D397374726561+
+	?debug	C 6D627566
+	?debug	C E3818400040016818500
+	?debug	C E381E30000002D81840409810600
+	?debug	C E381E50000002D0604018106001140696F734030+
+	?debug	C 626974616C6C6F63247176
+	?debug	C E381E70000002D0404018106000F40696F734030+
+	?debug	C 78616C6C6F63247176
+	?debug	C E381E9000400350600
+	?debug	C E381EA0000002D81E904018106000E40696F7340+
+	?debug	C 3069776F7264247169
+	?debug	C E381EC00040035817F00
+	?debug	C E381ED0000002D81EC04018106000E40696F7340+
+	?debug	C 3070776F7264247169
+	?debug	C E381EF0000002D0104018106001840696F734030+
+	?debug	C 73796E635F776974685F737464696F247176
+	?debug	C E381F10000002D0404018106000D40696F734030+
+	?debug	C 736B6970247169
+	?debug	C E381F30000002D810D04018106000E40696F7340+
+	?debug	C 302462637472247176
+	?debug	C E381F50000002D0104018106001740696F734030+
+	?debug	C 696E697424716E3973747265616D627566
+	?debug	C E381F70000002D0104018106001140696F734030+
+	?debug	C 7365747374617465247169
+	?debug	C E381FA00000023010400
+	?debug	C E381F90004001681FA00
+	?debug	C E381FB000400160100
+	?debug	C E381FC0000002D0104018106001140696F734030+
+	?debug	C 7573657273697A65247169
+	?debug	C E381FE0000002D810D04018106001240696F7340+
+	?debug	C 30246263747224716D33696F73
+	?debug	C E382000000002D0104058106001240696F734030+
+	?debug	C 246261736724716D33696F73
+	?debug	C E38105076973747265616D32002E13
+	?debug	C ED0013020081630E011480
+	?debug	C E3820200040016810500
+	?debug	C E382030000002D820204018105001C4069737472+
+	?debug	C 65616D4030246263747224716E3973747265616D+
+	?debug	C 627566
+	?debug	C E382050000002D01040181050012406973747265+
+	?debug	C 616D40302462647472247176
+	?debug	C E382070000002D82020401810500264069737472+
+	?debug	C 65616D4030246263747224716E3973747265616D+
+	?debug	C 627566696E376F73747265616D
+	?debug	C E382090000002D82020401810500164069737472+
+	?debug	C 65616D403024626374722471696E7A6369
+	?debug	C E3820B0000002D820204018105001C4069737472+
+	?debug	C 65616D40302462637472247169696E376F737472+
+	?debug	C 65616D
+	?debug	C E3820D0000002D04040181050011406973747265+
+	?debug	C 616D403069706678247169
+	?debug	C E3820F0000002D040409810500
+	?debug	C E382110000002D040409810500
+	?debug	C E382130000002D010409810500
+	?debug	C E3821500040035810500
+	?debug	C E382160000002D82150401810500124069737472+
+	?debug	C 65616D40307365656B6724716C
+	?debug	C E382180000002D821504018105001B4069737472+
+	?debug	C 65616D40307365656B6724716C387365656B5F64+
+	?debug	C 6972
+	?debug	C E3821A0000002D06040181050012406973747265+
+	?debug	C 616D403074656C6C67247176
+	?debug	C E3821C0000002D040409810500
+	?debug	C E3821E0000002D82150401810500154069737472+
+	?debug	C 65616D403067657424716E7A63697A63
+	?debug	C E382200000002D82150409810500
+	?debug	C E382220000002D82150401810500144069737472+
+	?debug	C 65616D40307265616424716E7A6369
+	?debug	C E382240000002D82150409810500
+	?debug	C E382260000002D82150401810500194069737472+
+	?debug	C 65616D40306765746C696E6524716E7A63697A63
+	?debug	C E382280000002D82150409810500
+	?debug	C E3822A0000002D821504018105001C4069737472+
+	?debug	C 65616D403067657424716D3973747265616D6275+
+	?debug	C 667A63
+	?debug	C E3822C0000002D82150401810500124069737472+
+	?debug	C 65616D403067657424716D7563
+	?debug	C E3822E0000002D82150401810500124069737472+
+	?debug	C 65616D403067657424716D7A63
+	?debug	C E382300000002D04040181050010406973747265+
+	?debug	C 616D4030676574247176
+	?debug	C E382320000002D040409810500
+	?debug	C E382340000002D040409810500
+	?debug	C E382360000002D82150401810500154069737472+
+	?debug	C 65616D40307075746261636B24717A63
+	?debug	C E382380000002D82150401810500144069737472+
+	?debug	C 65616D403069676E6F726524716969
+	?debug	C E3823A0000002D8215040D810500
+	?debug	C E3823C0000002D821504058105001E4069737472+
+	?debug	C 65616D4030246272736824716E716D33696F7324+
+	?debug	C 6D33696F73
+	?debug	C E3823E0000002D82150405810500144069737472+
+	?debug	C 65616D4030246272736824716E7A63
+	?debug	C E382400000002D8215040D810500
+	?debug	C E382420000002D82150405810500144069737472+
+	?debug	C 65616D4030246272736824716D7563
+	?debug	C E382440000002D82150405810500144069737472+
+	?debug	C 65616D4030246272736824716D7A63
+	?debug	C E382460000002D82150405810500134069737472+
+	?debug	C 65616D4030246272736824716D73
+	?debug	C E382480000002D82150405810500134069737472+
+	?debug	C 65616D4030246272736824716D69
+	?debug	C E3824A0000002D82150405810500134069737472+
+	?debug	C 65616D4030246272736824716D6C
+	?debug	C E3824C0000002D82150405810500144069737472+
+	?debug	C 65616D4030246272736824716D7573
+	?debug	C E3824E0000002D82150405810500144069737472+
+	?debug	C 65616D4030246272736824716D7569
+	?debug	C E382500000002D82150405810500144069737472+
+	?debug	C 65616D4030246272736824716D756C
+	?debug	C E382520000002D82150405810500134069737472+
+	?debug	C 65616D4030246272736824716D66
+	?debug	C E382540000002D82150405810500134069737472+
+	?debug	C 65616D4030246272736824716D64
+	?debug	C E382560000002D82150405810500134069737472+
+	?debug	C 65616D4030246272736824716D67
+	?debug	C E382580000002D821504058105001C4069737472+
+	?debug	C 65616D4030246272736824716E3973747265616D+
+	?debug	C 627566
+	?debug	C E3825A0000002D82020401810500124069737472+
+	?debug	C 65616D40302462637472247176
+	?debug	C E3825C0000002D01040181050015406973747265+
+	?debug	C 616D40306561747768697465247176
+	?debug	C E3825E0000002D02040181050013406973747265+
+	?debug	C 616D4030646F5F676574247176
+	?debug	C E3810408696F73747265616D38002E12
+	?debug	C ED0012020081940E0213001500
+	?debug	C E3826000040016810400
+	?debug	C E382610000002D826004018104001D40696F7374+
+	?debug	C 7265616D4030246263747224716E397374726561+
+	?debug	C 6D627566
+	?debug	C E382630000002D0104018104001340696F737472+
+	?debug	C 65616D40302462647472247176
+	?debug	C E382650000002D826004018104001340696F7374+
+	?debug	C 7265616D40302462637472247176
+	?debug	C E3810313696F73747265616D5F77697468617373+
+	?debug	C 69676E38002E11
+	?debug	C ED0011020081980E011200
+	?debug	C E3826700040016810300
+	?debug	C E382680000002D826704018103001E40696F7374+
+	?debug	C 7265616D5F7769746861737369676E4030246263+
+	?debug	C 7472247176
+	?debug	C E3826A0000002D0104018103001E40696F737472+
+	?debug	C 65616D5F7769746861737369676E403024626474+
+	?debug	C 72247176
+	?debug	C E3826C00040035810300
+	?debug	C E3826D0000002D826C04058103002240696F7374+
+	?debug	C 7265616D5F7769746861737369676E4030246261+
+	?debug	C 736724716D33696F73
+	?debug	C E3826F0000002D826C04058103002840696F7374+
+	?debug	C 7265616D5F7769746861737369676E4030246261+
+	?debug	C 736724716E3973747265616D627566
+	?debug	C E38271126F73747265616D5F7769746861737369+
+	?debug	C 676E30002E17
+	?debug	C ED00170200819D0E011500
+	?debug	C E3827200040016827100
+	?debug	C E382730000002D827204018271001D406F737472+
+	?debug	C 65616D5F7769746861737369676E403024626374+
+	?debug	C 72247176
+	?debug	C E382750000002D0104018271001D406F73747265+
+	?debug	C 616D5F7769746861737369676E40302462647472+
+	?debug	C 247176
+	?debug	C E3827700040035827100
+	?debug	C E382780000002D8277040582710025406F737472+
+	?debug	C 65616D5F7769746861737369676E403024626173+
+	?debug	C 6724716D376F73747265616D
+	?debug	C E3827A0000002D8277040582710027406F737472+
+	?debug	C 65616D5F7769746861737369676E403024626173+
+	?debug	C 6724716E3973747265616D627566
+	?debug	C E3827C126973747265616D5F7769746861737369+
+	?debug	C 676E32002E18
+	?debug	C ED0018020081A20E011300
+	?debug	C E3827D00040016827C00
+	?debug	C E3827E0000002D827D0401827C001D4069737472+
+	?debug	C 65616D5F7769746861737369676E403024626374+
+	?debug	C 72247176
+	?debug	C E382800000002D010401827C001D406973747265+
+	?debug	C 616D5F7769746861737369676E40302462647472+
+	?debug	C 247176
+	?debug	C E3828200040035827C00
+	?debug	C E382830000002D82820405827C00254069737472+
+	?debug	C 65616D5F7769746861737369676E403024626173+
+	?debug	C 6724716D376973747265616D
+	?debug	C E382850000002D82820405827C00274069737472+
+	?debug	C 65616D5F7769746861737369676E403024626173+
+	?debug	C 6724716E3973747265616D627566
+	?debug	C E38287095363686564756C657201002E19
+	?debug	C ED0019000081A70E00
+	?debug	C E382880000002D01040182870016405363686564+
+	?debug	C 756C6572403070757424716E33504342
+	?debug	C E3828A0000002D3F040182870012405363686564+
+	?debug	C 756C65724030676574247176
+	?debug	C E3828C00000023010700
+	?debug	C EC094074696D6572247176828C9800
+	?debug	C E3828D0554696D657201002E1A
+	?debug	C ED001A000081AA0E00
+	?debug	C E3828E0000002D010401828D000F4054696D6572+
+	?debug	C 4030696E6974247176
+	?debug	C E382900000002D010401828D00124054696D6572+
+	?debug	C 4030726573746F7265247176
+	?debug	C E61452696F73747265616D5F7769746861737369+
+	?debug	C 676E826C06001450696F73747265616D5F776974+
+	?debug	C 6861737369676E8267060013526F73747265616D+
+	?debug	C 5F7769746861737369676E8277060013506F7374+
+	?debug	C 7265616D5F7769746861737369676E8272060013+
+	?debug	C 526973747265616D5F7769746861737369676E82+
+	?debug	C 82060013506973747265616D5F77697468617373+
+	?debug	C 69676E827D06000950696F73747265616D826006+
+	?debug	C 0008526F73747265616D8136060008506F737472+
+	?debug	C 65616D8128060008526973747265616D82150600+
+	?debug	C 08506973747265616D820206000A507374726561+
+	?debug	C 6D627566818406000450696F73810D0600097374+
+	?debug	C 7265616D6F66660606000973747265616D706F73+
+	?debug	C 06060009707472646966665F740606000666706F+
+	?debug	C 735F740606000673697A655F740A060008536967+
+	?debug	C 6E616C49640A06000D5369676E616C48616E646C+
+	?debug	C 65726906000249440406000454696D650A060009+
+	?debug	C 537461636B53697A650C06000E696F735F757365+
+	?debug	C 725F756E696F6E01070013696F73747265616D5F+
+	?debug	C 7769746861737369676E81030700126F73747265+
+	?debug	C 616D5F7769746861737369676E82710700126973+
+	?debug	C 747265616D5F7769746861737369676E827C0700+
+	?debug	C 08696F73747265616D81040700076F7374726561+
+	?debug	C 6D81290700076973747265616D81050700097374+
+	?debug	C 7265616D6275668185070003696F73810607000A+
+	?debug	C 3C74656D706C6174653E1D07000A3C74656D706C+
+	?debug	C 6174653E80D907000750434274696D653D070009+
+	?debug	C 53656D6170686F7265320700094B65726E656C53+
+	?debug	C 656D1C0700095363686564756C6572828707000A+
+	?debug	C 3C74656D706C6174653E809C07000A3C74656D70+
+	?debug	C 6C6174653E808207000A3C74656D706C6174653E+
+	?debug	C 6807000653746174657343070006546872656164+
+	?debug	C 460700035043424007000554696D6572828D0700
+	?debug	C E2000376616C1B00046E657874194A2D40254C69+
+	?debug	C 737424746E394B65726E656C53656D25404E6F64+
+	?debug	C 654030246263747224716E394B65726E656C5365+
+	?debug	C 6D8101C008000000
+	?debug	C E26019404B65726E656C53656D4030616C6C5365+
+	?debug	C 6D6170686F7265731D000376616C0400056D7953+
+	?debug	C 656D310007626C6F636B65643D4814404B65726E+
+	?debug	C 656C53656D4030776169742471756980F3481540+
+	?debug	C 4B65726E656C53656D40307369676E616C247169+
+	?debug	C 80F54815404B65726E656C53656D4030626C6F63+
+	?debug	C 6B2471756980F74816404B65726E656C53656D40+
+	?debug	C 30756E626C6F636B24717680F94A1F404B65726E+
+	?debug	C 656C53656D4030246263747224716E3953656D61+
+	?debug	C 70686F72656980FB4914404B65726E656C53656D+
+	?debug	C 4030246264747224717680FD4817404B65726E65+
+	?debug	C 6C53656D40307061737354696D6524717680FFC0+
+	?debug	C 0E000000
+	?debug	C E27001541B70044E6F64651A00066C656E677468+
+	?debug	C 0400046865616419481E40254C69737424746E39+
+	?debug	C 4B65726E656C53656D2540657261736524777176+
+	?debug	C 1E482740254C69737424746E394B65726E656C53+
+	?debug	C 656D2540707573682477716E394B65726E656C53+
+	?debug	C 656D20482B40254C69737424746E394B65726E65+
+	?debug	C 6C53656D2540707573684261636B2477716E394B+
+	?debug	C 65726E656C53656D22481C40254C69737424746E+
+	?debug	C 394B65726E656C53656D2540706F702477717624+
+	?debug	C 491D40254C69737424746E394B65726E656C5365+
+	?debug	C 6D2540246264747224717626482C40254C697374+
+	?debug	C 24746E394B65726E656C53656D254064656C6574+
+	?debug	C 6576616C2477716E394B65726E656C53656D2848+
+	?debug	C 3940254C69737424746E394B65726E656C53656D+
+	?debug	C 254064656C4E6F646524716E3234254C69737424+
+	?debug	C 746E394B65726E656C53656D25404E6F64652A48+
+	?debug	C 1F40254C69737424746E394B65726E656C53656D+
+	?debug	C 2540676574486561642471762C4A1D40254C6973+
+	?debug	C 7424746E394B65726E656C53656D254024626374+
+	?debug	C 722471762FC006000000
+	?debug	C E24A144053656D6170686F726540302462637472+
+	?debug	C 247169334D144053656D6170686F726540302462+
+	?debug	C 647472247176354C144053656D6170686F726540+
+	?debug	C 307761697424717569374C154053656D6170686F+
+	?debug	C 726540307369676E616C2471693948134053656D+
+	?debug	C 6170686F7265403076616C247871763B40040000+
+	?debug	C 0000066D79496D706C1BC008000000
+	?debug	C E27004456C656D3E00106B6F6C696B6F4F747075+
+	?debug	C 7374656E69680400056C6973746180D948154050+
+	?debug	C 434274696D6540307061737354696D6524717680+
+	?debug	C ED48194050434274696D65403061646450434224+
+	?debug	C 716E33504342756980EF48164050434274696D65+
+	?debug	C 40307369676E616C4F6E6524717680F1C0080000+
+	?debug	C 00
+	?debug	C E200037063623F000474696D650A4A1D40504342+
+	?debug	C 74696D6540456C656D4030246263747224716E33+
+	?debug	C 504342756980D7C006000000
+	?debug	C E2600D40504342403072756E6E696E6741000573+
+	?debug	C 7461636B42000273730A000273700A000262700A+
+	?debug	C 00056B76616E740A00096C6F636B436F756E7404+
+	?debug	C 0002696404000B74696D65556E626C6F636B0400+
+	?debug	C 0573746174654300086D7954687265616445600B+
+	?debug	C 4050434240304D4158494404000E7369676E616C+
+	?debug	C 48616E646C65727367000D616374697665536967+
+	?debug	C 6E616C738082000A7369676E616C4C6F636B809A+
+	?debug	C 6016405043424030676C6F62616C5369676E616C+
+	?debug	C 4C6F636B809B0006706172656E743F600C405043+
+	?debug	C 424030616C6C504342809C0007626C6F636B6564+
+	?debug	C 809C600D405043424030696E697469616C41600E+
+	?debug	C 40504342403064756D6D79504342416014405043+
+	?debug	C 42403072756E6E696E675468726561647304600D+
+	?debug	C 405043424030706F6D6C69737480824A11405043+
+	?debug	C 42403024626374722471756C756980B44A194050+
+	?debug	C 43424030246263747224716E3654687265616475+
+	?debug	C 6C756980B6481740504342403077726170706572+
+	?debug	C 24716E3654687265616480B84818405043424030+
+	?debug	C 616464546F416C6C50434224716E3350434280BA+
+	?debug	C 481D40504342403064656C65746546726F6D416C+
+	?debug	C 6C50434224716E3350434280BC481D4050434240+
+	?debug	C 30616464546F426C6F636B65644C69737424716E+
+	?debug	C 3350434280BE4814405043424030756E626C6F63+
+	?debug	C 6B416C6C2477717680C0490E4050434240302462+
+	?debug	C 64747224717680C248114050434240307369676E+
+	?debug	C 616C247771756980C4481E405043424030726567+
+	?debug	C 697374657248616E646C6572247175696E717624+
+	?debug	C 7680C6481F405043424030756E72656769737465+
+	?debug	C 72416C6C48616E646C6572732471756980C84815+
+	?debug	C 40504342403073776170247175696E7176247674+
+	?debug	C 3280CA4815405043424030626C6F636B5369676E+
+	?debug	C 616C2471756980CC481D405043424030626C6F63+
+	?debug	C 6B5369676E616C476C6F62616C6C792471756980+
+	?debug	C CE4817405043424030756E626C6F636B5369676E+
+	?debug	C 616C2471756980D0481F405043424030756E626C+
+	?debug	C 6F636B5369676E616C476C6F62616C6C79247175+
+	?debug	C 6980D24813405043424030646F5369676E616C73+
+	?debug	C 2477717680D4C0A8000000
+	?debug	C E40004444F4E4500000005524541445901000004+
+	?debug	C 4D41444502008007424C4F434B45440300
+	?debug	C E248114054687265616440307374617274247176+
+	?debug	C 47481A40546872656164403077616974546F436F+
+	?debug	C 6D706C657465247176494D114054687265616440+
+	?debug	C 3024626474722471764B48114054687265616440+
+	?debug	C 3067657449642471764D48184054687265616440+
+	?debug	C 3067657452756E6E696E6749642471764F481940+
+	?debug	C 5468726561644030676574546872656164427949+
+	?debug	C 642471695148134054687265616440307369676E+
+	?debug	C 616C247175695348214054687265616440307265+
+	?debug	C 67697374657248616E646C6572247175696E7176+
+	?debug	C 2476554822405468726561644030756E72656769+
+	?debug	C 73746572416C6C48616E646C6572732471756957+
+	?debug	C 481840546872656164403073776170247175696E+
+	?debug	C 717624767432594818405468726561644030626C+
+	?debug	C 6F636B5369676E616C247175695B482040546872+
+	?debug	C 6561644030626C6F636B5369676E616C476C6F62+
+	?debug	C 616C6C79247175695D481A405468726561644030+
+	?debug	C 756E626C6F636B5369676E616C247175695F4822+
+	?debug	C 405468726561644030756E626C6F636B5369676E+
+	?debug	C 616C476C6F62616C6C7924717569614A14405468+
+	?debug	C 72656164403024626374722471756C7569634C0F+
+	?debug	C 40546872656164403072756E2471766540040000+
+	?debug	C 0000056D795043423FC008000000
+	?debug	C E27001546970044E6F64656B00066C656E677468+
+	?debug	C 040004686561646C481840254C69737424746E71+
+	?debug	C 76247625406572617365247771766F481B40254C+
+	?debug	C 69737424746E717624762540707573682477716E+
+	?debug	C 7176247671481F40254C69737424746E71762476+
+	?debug	C 2540707573684261636B2477716E717624767348+
+	?debug	C 1640254C69737424746E717624762540706F7024+
+	?debug	C 77717675491740254C69737424746E7176247625+
+	?debug	C 40246264747224717677482040254C6973742474+
+	?debug	C 6E71762476254064656C65746576616C2477716E+
+	?debug	C 7176247679482D40254C69737424746E71762476+
+	?debug	C 254064656C4E6F646524716E3138254C69737424+
+	?debug	C 746E7176247625404E6F64657B481940254C6973+
+	?debug	C 7424746E71762476254067657448656164247176+
+	?debug	C 7D4A1740254C69737424746E7176247625402462+
+	?debug	C 6374722471768080C006000000
+	?debug	C E2000376616C6900046E6578746C4A2140254C69+
+	?debug	C 737424746E7176247625404E6F64654030246263+
+	?debug	C 747224716E717624766DC008000000
+	?debug	C E27001540A70044E6F6465808300066C656E6774+
+	?debug	C 68040004686561648084481540254C6973742474+
+	?debug	C 756925406572617365247771768087481540254C+
+	?debug	C 6973742474756925407075736824777175698089+
+	?debug	C 481940254C697374247475692540707573684261+
+	?debug	C 636B2477717569808B481340254C697374247475+
+	?debug	C 692540706F7024777176808D491440254C697374+
+	?debug	C 2474756925402462647472247176808F481A4025+
+	?debug	C 4C69737424747569254064656C65746576616C24+
+	?debug	C 777175698091482740254C697374247475692540+
+	?debug	C 64656C4E6F646524716E3135254C697374247475+
+	?debug	C 6925404E6F64658093481640254C697374247475+
+	?debug	C 6925406765744865616424717680954A1440254C+
+	?debug	C 69737424747569254024626374722471768098C0+
+	?debug	C 06000000
+	?debug	C E2000376616C0A00046E65787480844A1B40254C+
+	?debug	C 6973742474756925404E6F646540302462637472+
+	?debug	C 247175698085C006000000
+	?debug	C E27001543F70044E6F6465809D00066C656E6774+
+	?debug	C 6804000468656164809E481840254C6973742474+
+	?debug	C 6E33504342254065726173652477717680A1481B+
+	?debug	C 40254C69737424746E3350434225407075736824+
+	?debug	C 77716E3350434280A3481F40254C69737424746E+
+	?debug	C 335043422540707573684261636B2477716E3350+
+	?debug	C 434280A5481640254C69737424746E3350434225+
+	?debug	C 40706F702477717680A7491740254C6973742474+
+	?debug	C 6E335043422540246264747224717680A9482040+
+	?debug	C 254C69737424746E33504342254064656C657465+
+	?debug	C 76616C2477716E3350434280AB482D40254C6973+
+	?debug	C 7424746E33504342254064656C4E6F646524716E+
+	?debug	C 3138254C69737424746E3350434225404E6F6465+
+	?debug	C 80AD481940254C69737424746E33504342254067+
+	?debug	C 65744865616424717680AF4A1740254C69737424+
+	?debug	C 746E335043422540246263747224717680B2C006+
+	?debug	C 000000
+	?debug	C E2000376616C3F00046E657874809E4A2140254C+
+	?debug	C 69737424746E3350434225404E6F646540302462+
+	?debug	C 63747224716E33504342809FC008000000
+	?debug	C E27001543E70044E6F646580DA00066C656E6774+
+	?debug	C 680400046865616480DB482440254C6973745661+
+	?debug	C 6C2474313250434274696D6540456C656D254065+
+	?debug	C 726173652477717680DE483040254C6973745661+
+	?debug	C 6C2474313250434274696D6540456C656D254070+
+	?debug	C 757368247771313250434274696D6540456C656D+
+	?debug	C 80E0482240254C69737456616C24743132504342+
+	?debug	C 74696D6540456C656D2540706F702477717680E2+
+	?debug	C 492340254C69737456616C247431325043427469+
+	?debug	C 6D6540456C656D2540246264747224717680E448+
+	?debug	C 3F40254C69737456616C2474313250434274696D+
+	?debug	C 6540456C656D254064656C4E6F646524716E3330+
+	?debug	C 254C69737456616C2474313250434274696D6540+
+	?debug	C 456C6F7280E64A2340254C69737456616C247431+
+	?debug	C 3250434274696D6540456C656D25402462637472+
+	?debug	C 24717680E9482540254C69737456616C24743132+
+	?debug	C 50434274696D6540456C656D2540686561645661+
+	?debug	C 6C24717680EBC006000000
+	?debug	C E2000376616C3E00046E65787480DB4A3640254C+
+	?debug	C 69737456616C2474313250434274696D6540456C+
+	?debug	C 656D25404E6F6465403024626374722471313250+
+	?debug	C 434274696D6540456C656D80DCC00A000000
+	?debug	C E27008696F5F7374617465810770096F70656E5F+
+	?debug	C 6D6F6465810970087365656B5F646972810B600F+
+	?debug	C 40696F734030626173656669656C640660114069+
+	?debug	C 6F73403061646A7573746669656C640660104069+
+	?debug	C 6F734030666C6F61746669656C64064A1840696F+
+	?debug	C 734030246263747224716E3973747265616D6275+
+	?debug	C 66810E4D0E40696F734030246264747224717681+
+	?debug	C 10480E40696F734030666C616773247176811248+
+	?debug	C 0E40696F734030666C61677324716C8114480E40+
+	?debug	C 696F7340307365746624716C6C8116480D40696F+
+	?debug	C 7340307365746624716C8118480F40696F734030+
+	?debug	C 756E7365746624716C811A480E40696F73403077+
+	?debug	C 69647468247176811C480E40696F734030776964+
+	?debug	C 7468247169811E480D40696F73403066696C6C24+
+	?debug	C 71768120480E40696F73403066696C6C24717A63+
+	?debug	C 8122481240696F734030707265636973696F6E24+
+	?debug	C 71698124481240696F734030707265636973696F+
+	?debug	C 6E2471768126481440696F73403074696524716E+
+	?debug	C 376F73747265616D816F480C40696F7340307469+
+	?debug	C 652471768171481040696F734030726473746174+
+	?debug	C 652471768173480C40696F734030656F66247176+
+	?debug	C 8175480D40696F7340306661696C247176817748+
+	?debug	C 0C40696F7340306261642471768179480D40696F+
+	?debug	C 734030676F6F64247176817B480E40696F734030+
+	?debug	C 636C656172247169817D4B0D40696F734030246F+
+	?debug	C 6E762471768180480E40696F73403024626E6F74+
+	?debug	C 2471768182480E40696F73403072646275662471+
+	?debug	C 7681E3481140696F734030626974616C6C6F6324+
+	?debug	C 717681E5480F40696F73403078616C6C6F632471+
+	?debug	C 7681E7480E40696F73403069776F726424716981+
+	?debug	C EA480E40696F73403070776F726424716981ED48+
+	?debug	C 1840696F73403073796E635F776974685F737464+
+	?debug	C 696F24717681EF480D40696F734030736B697024+
+	?debug	C 716981F140040000000002627081840005785F74+
+	?debug	C 6965812800057374617465040008697370656369+
+	?debug	C 616C0400086F7370656369616C040007785F666C+
+	?debug	C 61677306000B785F707265636973696F6E040007+
+	?debug	C 785F7769647468040006785F66696C6C04000C69+
+	?debug	C 7366785F7370656369616C04000C6F7366785F73+
+	?debug	C 70656369616C04000664656C62756604000E6173+
+	?debug	C 7369676E5F70726976617465044A0E40696F7340+
+	?debug	C 30246263747224717681F3481740696F73403069+
+	?debug	C 6E697424716E3973747265616D62756681F54811+
+	?debug	C 40696F734030736574737461746524716981F760+
+	?debug	C 1040696F734030737464696F666C75736881F960+
+	?debug	C 0D40696F7340306E65787462697406600F40696F+
+	?debug	C 73403075736572636F756E740400097573657277+
+	?debug	C 6F72647381FB00066E776F72647304481140696F+
+	?debug	C 7340307573657273697A6524716981FC4A124069+
+	?debug	C 6F734030246263747224716D33696F7381FE4812+
+	?debug	C 40696F734030246261736724716D33696F738200+
+	?debug	C C02A000000
+	?debug	C E4000D40696F734030676F6F646269740000000C+
+	?debug	C 40696F734030656F666269740100000D40696F73+
+	?debug	C 40306661696C6269740200000C40696F73403062+
+	?debug	C 61646269740400800E40696F7340306861726466+
+	?debug	C 61696C8000
+	?debug	C E4000840696F734030696E0100000940696F7340+
+	?debug	C 306F75740200000940696F734030617465040000+
+	?debug	C 0940696F7340306170700800000B40696F734030+
+	?debug	C 7472756E631000000E40696F7340306E6F637265+
+	?debug	C 6174652000000F40696F7340306E6F7265706C61+
+	?debug	C 63654000800C40696F73403062696E6172798000
+	?debug	C E4000940696F7340306265670000000940696F73+
+	?debug	C 40306375720100800940696F734030656E640200
+	?debug	C E24A1C406F73747265616D403024626374722471+
+	?debug	C 6E3973747265616D627566812A4D12406F737472+
+	?debug	C 65616D40302462647472247176812C4A12406F73+
+	?debug	C 747265616D40302462637472247169812E4A1540+
+	?debug	C 6F73747265616D403024626374722471696E7A63+
+	?debug	C 81304811406F73747265616D40306F7066782471+
+	?debug	C 7681324811406F73747265616D40306F73667824+
+	?debug	C 717681344812406F73747265616D4030666C7573+
+	?debug	C 6824717681374812406F73747265616D40307365+
+	?debug	C 656B7024716C8139481B406F73747265616D4030+
+	?debug	C 7365656B7024716C387365656B5F646972813B48+
+	?debug	C 12406F73747265616D403074656C6C7024717681+
+	?debug	C 3D4811406F73747265616D403070757424717A63+
+	?debug	C 813F4816406F73747265616D4030777269746524+
+	?debug	C 716E787A636981414816406F73747265616D4030+
+	?debug	C 777269746524716E7875636981434813406F7374+
+	?debug	C 7265616D403024626C736824717A638145481340+
+	?debug	C 6F73747265616D403024626C7368247175638147+
+	?debug	C 4812406F73747265616D403024626C7368247173+
+	?debug	C 81494813406F73747265616D403024626C736824+
+	?debug	C 717573814B4812406F73747265616D403024626C+
+	?debug	C 7368247169814D4813406F73747265616D403024+
+	?debug	C 626C736824717569814F4812406F73747265616D+
+	?debug	C 403024626C736824716C81514813406F73747265+
+	?debug	C 616D403024626C73682471756C81534812406F73+
+	?debug	C 747265616D403024626C73682471668155481240+
+	?debug	C 6F73747265616D403024626C7368247164815748+
+	?debug	C 12406F73747265616D403024626C736824716781+
+	?debug	C 594815406F73747265616D403024626C73682471+
+	?debug	C 6E787A63815B4815406F73747265616D40302462+
+	?debug	C 6C736824716E787563815D4813406F7374726561+
+	?debug	C 6D403024626C736824716E76815F481C406F7374+
+	?debug	C 7265616D403024626C736824716E397374726561+
+	?debug	C 6D62756681614826406F73747265616D40302462+
+	?debug	C 6C736824716E716D376F73747265616D246D376F+
+	?debug	C 73747265616D8163481E406F73747265616D4030+
+	?debug	C 24626C736824716E716D33696F73246D33696F73+
+	?debug	C 81654814406F73747265616D4030646F5F6F7066+
+	?debug	C 7824717681674814406F73747265616D4030646F+
+	?debug	C 5F6F73667824717681694A12406F73747265616D+
+	?debug	C 40302462637472247176816B4818406F73747265+
+	?debug	C 616D40306F757473747224716E787A637431816D+
+	?debug	C C030000000
+	?debug	C E24A144073747265616D62756640302462637472+
+	?debug	C 24717681864A174073747265616D627566403024+
+	?debug	C 6263747224716E7A636981884D14407374726561+
+	?debug	C 6D62756640302462647472247176818A4C184073+
+	?debug	C 747265616D627566403073657462756624716E7A+
+	?debug	C 6369818C48184073747265616D62756640307365+
+	?debug	C 7462756624716E756369818E4819407374726561+
+	?debug	C 6D627566403073657462756624716E7A63696981+
+	?debug	C 9048144073747265616D62756640307367657463+
+	?debug	C 247176819248154073747265616D627566403073+
+	?debug	C 6E65787463247176819448154073747265616D62+
+	?debug	C 756640307362756D706324717681964815407374+
+	?debug	C 7265616D627566403073746F7373632471768198+
+	?debug	C 48174073747265616D6275664030736765746E24+
+	?debug	C 716E7A6369819A4C1A4073747265616D62756640+
+	?debug	C 30646F5F736765746E24716E7A6369819C4C1840+
+	?debug	C 73747265616D6275664030756E646572666C6F77+
+	?debug	C 247176819E48194073747265616D627566403073+
+	?debug	C 7075746261636B6324717A6381A04C1840737472+
+	?debug	C 65616D6275664030706261636B6661696C247169+
+	?debug	C 81A248174073747265616D6275664030696E5F61+
+	?debug	C 7661696C24717681A448144073747265616D6275+
+	?debug	C 664030737075746324716981A648184073747265+
+	?debug	C 616D6275664030737075746E24716E787A636981+
+	?debug	C A84C1B4073747265616D6275664030646F5F7370+
+	?debug	C 75746E24716E787A636981AA4C17407374726561+
+	?debug	C 6D62756640306F766572666C6F7724716981AC48+
+	?debug	C 1A4073747265616D62756640306F75745F776169+
+	?debug	C 74696E6724717681AE4C204073747265616D6275+
+	?debug	C 6640307365656B6F666624716C387365656B5F64+
+	?debug	C 69726981B04C174073747265616D627566403073+
+	?debug	C 65656B706F7324716C6981B24C13407374726561+
+	?debug	C 6D627566403073796E6324717681B44812407374+
+	?debug	C 7265616D627566403064627024717681B6481340+
+	?debug	C 73747265616D62756640306261736524717681B9+
+	?debug	C 48134073747265616D6275664030656275662471+
+	?debug	C 7681BB48134073747265616D6275664030626C65+
+	?debug	C 6E24717681BD48144073747265616D6275664030+
+	?debug	C 706261736524717681BF48134073747265616D62+
+	?debug	C 756640307070747224717681C148144073747265+
+	?debug	C 616D6275664030657070747224717681C3481440+
+	?debug	C 73747265616D6275664030656261636B24717681+
+	?debug	C C548134073747265616D62756640306770747224+
+	?debug	C 717681C748144073747265616D62756640306567+
+	?debug	C 70747224717681C948174073747265616D627566+
+	?debug	C 40307365747024716E7A63743181CB4819407374+
+	?debug	C 7265616D62756640307365746724716E7A637431+
+	?debug	C 743181CD48144073747265616D62756640307062+
+	?debug	C 756D7024716981CF48144073747265616D627566+
+	?debug	C 40306762756D7024716981D14818407374726561+
+	?debug	C 6D62756640307365746224716E7A6374316981D3+
+	?debug	C 48194073747265616D6275664030756E62756666+
+	?debug	C 6572656424716981D548194073747265616D6275+
+	?debug	C 664030756E627566666572656424717681D74817+
+	?debug	C 4073747265616D6275664030616C6C6F63617465+
+	?debug	C 24717681D94C194073747265616D627566403064+
+	?debug	C 6F616C6C6F6361746524717681DB400400000000+
+	?debug	C 06616C6C6F635F040006756E6275665F04000562+
+	?debug	C 6173655F81B80005656275665F81B80006706261+
+	?debug	C 73655F81B80005707074725F81B8000665707074+
+	?debug	C 725F81B80006656261636B5F81B8000567707472+
+	?debug	C 5F81B8000665677074725F81B848184073747265+
+	?debug	C 616D6275664030646F5F736E6578746324717681+
+	?debug	C DD4A1E4073747265616D62756640302462637472+
+	?debug	C 24716D3973747265616D62756681DF481E407374+
+	?debug	C 7265616D6275664030246261736724716D397374+
+	?debug	C 7265616D62756681E1C028000000
+	?debug	C E24A1C406973747265616D403024626374722471+
+	?debug	C 6E3973747265616D62756682034D124069737472+
+	?debug	C 65616D4030246264747224717682054A26406973+
+	?debug	C 747265616D4030246263747224716E3973747265+
+	?debug	C 616D627566696E376F73747265616D82074A1640+
+	?debug	C 6973747265616D403024626374722471696E7A63+
+	?debug	C 6982094A1C406973747265616D40302462637472+
+	?debug	C 247169696E376F73747265616D820B4811406973+
+	?debug	C 747265616D403069706678247169820D48124069+
+	?debug	C 73747265616D40306970667830247176820F4812+
+	?debug	C 406973747265616D403069706678312471768211+
+	?debug	C 4811406973747265616D40306973667824717682+
+	?debug	C 134812406973747265616D40307365656B672471+
+	?debug	C 6C8216481B406973747265616D40307365656B67+
+	?debug	C 24716C387365656B5F6469728218481240697374+
+	?debug	C 7265616D403074656C6C67247176821A48114069+
+	?debug	C 73747265616D403073796E63247176821C481540+
+	?debug	C 6973747265616D403067657424716E7A63697A63+
+	?debug	C 821E4815406973747265616D403067657424716E+
+	?debug	C 7563697A6382204814406973747265616D403072+
+	?debug	C 65616424716E7A63698222481440697374726561+
+	?debug	C 6D40307265616424716E75636982244819406973+
+	?debug	C 747265616D40306765746C696E6524716E7A6369+
+	?debug	C 7A6382264819406973747265616D40306765746C+
+	?debug	C 696E6524716E7563697A638228481C4069737472+
+	?debug	C 65616D403067657424716D3973747265616D6275+
+	?debug	C 667A63822A4812406973747265616D4030676574+
+	?debug	C 24716D7563822C4812406973747265616D403067+
+	?debug	C 657424716D7A63822E4810406973747265616D40+
+	?debug	C 3067657424717682304811406973747265616D40+
+	?debug	C 307065656B24717682324813406973747265616D+
+	?debug	C 403067636F756E74247176823448154069737472+
+	?debug	C 65616D40307075746261636B24717A6382364814+
+	?debug	C 406973747265616D403069676E6F726524716969+
+	?debug	C 82384826406973747265616D4030246272736824+
+	?debug	C 716E716D376973747265616D246D376973747265+
+	?debug	C 616D823A481E406973747265616D403024627273+
+	?debug	C 6824716E716D33696F73246D33696F73823C4814+
+	?debug	C 406973747265616D4030246272736824716E7A63+
+	?debug	C 823E4814406973747265616D4030246272736824+
+	?debug	C 716E756382404814406973747265616D40302462+
+	?debug	C 72736824716D756382424814406973747265616D+
+	?debug	C 4030246272736824716D7A638244481340697374+
+	?debug	C 7265616D4030246272736824716D738246481340+
+	?debug	C 6973747265616D4030246272736824716D698248+
+	?debug	C 4813406973747265616D4030246272736824716D+
+	?debug	C 6C824A4814406973747265616D40302462727368+
+	?debug	C 24716D7573824C4814406973747265616D403024+
+	?debug	C 6272736824716D7569824E481440697374726561+
+	?debug	C 6D4030246272736824716D756C82504813406973+
+	?debug	C 747265616D4030246272736824716D6682524813+
+	?debug	C 406973747265616D4030246272736824716D6482+
+	?debug	C 544813406973747265616D403024627273682471+
+	?debug	C 6D678256481C406973747265616D403024627273+
+	?debug	C 6824716E3973747265616D62756682584A124069+
+	?debug	C 73747265616D40302462637472247176825A4815+
+	?debug	C 406973747265616D403065617477686974652471+
+	?debug	C 76825C4006000000000767636F756E745F044813+
+	?debug	C 406973747265616D4030646F5F67657424717682+
+	?debug	C 5EC032000000
+	?debug	C E24A1D40696F73747265616D4030246263747224+
+	?debug	C 716E3973747265616D62756682614D1340696F73+
+	?debug	C 747265616D4030246264747224717682634A1340+
+	?debug	C 696F73747265616D403024626374722471768265+
+	?debug	C C038000000
+	?debug	C E24A1E40696F73747265616D5F77697468617373+
+	?debug	C 69676E4030246263747224717682684D1E40696F+
+	?debug	C 73747265616D5F7769746861737369676E403024+
+	?debug	C 62647472247176826A482240696F73747265616D+
+	?debug	C 5F7769746861737369676E403024626173672471+
+	?debug	C 6D33696F73826D482840696F73747265616D5F77+
+	?debug	C 69746861737369676E4030246261736724716E39+
+	?debug	C 73747265616D627566826FC038000000
+	?debug	C E24A1D406F73747265616D5F7769746861737369+
+	?debug	C 676E4030246263747224717682734D1D406F7374+
+	?debug	C 7265616D5F7769746861737369676E4030246264+
+	?debug	C 747224717682754825406F73747265616D5F7769+
+	?debug	C 746861737369676E4030246261736724716D376F+
+	?debug	C 73747265616D82784827406F73747265616D5F77+
+	?debug	C 69746861737369676E4030246261736724716E39+
+	?debug	C 73747265616D627566827AC030000000
+	?debug	C E24A1D406973747265616D5F7769746861737369+
+	?debug	C 676E40302462637472247176827E4D1D40697374+
+	?debug	C 7265616D5F7769746861737369676E4030246264+
+	?debug	C 747224717682804825406973747265616D5F7769+
+	?debug	C 746861737369676E4030246261736724716D3769+
+	?debug	C 73747265616D82834827406973747265616D5F77+
+	?debug	C 69746861737369676E4030246261736724716E39+
+	?debug	C 73747265616D6275668285C032000000
+	?debug	C E24816405363686564756C657240307075742471+
+	?debug	C 6E3350434282884812405363686564756C657240+
+	?debug	C 30676574247176828AC001000000
+	?debug	C E2600E4054696D6572403062726F6A61630A6023+
+	?debug	C 4054696D657240307A6168746576616E615F7072+
+	?debug	C 6F6D656E615F6B6F6E74656B7374610A60154054+
+	?debug	C 696D65724030676C6F62616C4C6F636B436E7404+
+	?debug	C 60174054696D65724030706F7A76616E5F646973+
+	?debug	C 70617463680460124054696D657240306E656564+
+	?debug	C 546F4B696C6C04480F4054696D65724030696E69+
+	?debug	C 74247176828E48124054696D6572403072657374+
+	?debug	C 6F72652471768290C001000000
+	end
+

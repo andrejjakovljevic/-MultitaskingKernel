@@ -52,7 +52,7 @@ void UserThread::run()
 
 int main(int argc, char** argv)
 {
-    //system("cls");
+    system("cls");
     softlock;
     Timer::init();
     global_argc=argc;
